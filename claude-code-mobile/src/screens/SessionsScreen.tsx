@@ -1,0 +1,105 @@
+/**
+ * SessionsScreen
+ * Based on spec lines 758-774
+ */
+
+import React from 'react';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import LinearGradient from 'expo-linear-gradient';
+import { useAppStore } from '../store/useAppStore';
+import { Session } from '../types/models';
+import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants/theme';
+import type { SessionsScreenProps } from '../types/navigation';
+
+export const SessionsScreen: React.FC<SessionsScreenProps> = ({ navigation }) => {
+  const sessions = useAppStore((state) => state.sessions);
+  const setCurrentSession = useAppStore((state) => state.setCurrentSession);
+  const deleteSession = useAppStore((state) => state.deleteSession);
+
+  const formatTimeAgo = (date: Date) => {
+    const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
+    if (seconds < 60) return 'just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    return `${Math.floor(seconds / 86400)}d ago`;
+  };
+
+  const handleSelectSession = (session: Session) => {
+    setCurrentSession(session);
+    navigation.navigate('Chat');
+  };
+
+  const handleDeleteSession = (sessionId: string) => {
+    deleteSession(sessionId);
+  };
+
+  const renderSession = ({ item }: { item: Session }) => (
+    <TouchableOpacity
+      testID={`session-item-${item.id}`}
+      style={styles.sessionItem}
+      onPress={() => handleSelectSession(item)}
+    >
+      <View style={styles.sessionContent}>
+        <Text style={styles.projectPath} numberOfLines={1}>📁 {item.projectPath}</Text>
+        <Text style={styles.sessionInfo}>
+          {item.conversationHistory.length} messages • {formatTimeAgo(item.lastActive)}
+        </Text>
+      </View>
+      <TouchableOpacity
+        testID={`delete-session-${item.id}`}
+        onPress={() => handleDeleteSession(item.id)}
+        style={styles.deleteButton}
+      >
+        <Text style={styles.deleteIcon}>🗑</Text>
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+
+  return (
+    <LinearGradient colors={[COLORS.backgroundGradient.start, COLORS.backgroundGradient.middle, COLORS.backgroundGradient.end]} style={styles.gradient}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
+        <View testID="sessions-header" style={styles.header}>
+          <TouchableOpacity testID="back-button" onPress={() => navigation.goBack()}>
+            <Text style={styles.backIcon}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>Your Sessions</Text>
+          <TouchableOpacity testID="refresh-button">
+            <Text style={styles.refreshIcon}>🔄</Text>
+          </TouchableOpacity>
+        </View>
+
+        <FlatList
+          testID="sessions-list"
+          data={sessions}
+          renderItem={renderSession}
+          keyExtractor={(item) => item.id}
+          ListEmptyComponent={
+            <View testID="no-sessions" style={styles.emptyState}>
+              <Text style={styles.emptyText}>No sessions yet</Text>
+              <Text style={styles.emptySubtext}>Create one from Chat screen</Text>
+            </View>
+          }
+        />
+      </SafeAreaView>
+    </LinearGradient>
+  );
+};
+
+const styles = StyleSheet.create({
+  gradient: { flex: 1 },
+  container: { flex: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 60, paddingHorizontal: SPACING.base, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  backIcon: { fontSize: 28, color: COLORS.primary },
+  refreshIcon: { fontSize: 24 },
+  title: { fontSize: TYPOGRAPHY.fontSize.xl, fontWeight: TYPOGRAPHY.fontWeight.bold, color: COLORS.textPrimary },
+  sessionItem: { flexDirection: 'row', alignItems: 'center', padding: SPACING.base, backgroundColor: COLORS.surface, borderRadius: BORDER_RADIUS.lg, marginHorizontal: SPACING.base, marginVertical: SPACING.xs },
+  sessionContent: { flex: 1 },
+  projectPath: { fontSize: TYPOGRAPHY.fontSize.md, fontWeight: TYPOGRAPHY.fontWeight.semibold, color: COLORS.textPrimary, marginBottom: SPACING.xs },
+  sessionInfo: { fontSize: TYPOGRAPHY.fontSize.sm, color: COLORS.textSecondary },
+  deleteButton: { padding: SPACING.sm },
+  deleteIcon: { fontSize: 20 },
+  emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: SPACING.xxxl },
+  emptyText: { fontSize: TYPOGRAPHY.fontSize.lg, color: COLORS.textPrimary, fontWeight: TYPOGRAPHY.fontWeight.semibold },
+  emptySubtext: { fontSize: TYPOGRAPHY.fontSize.base, color: COLORS.textSecondary, marginTop: SPACING.sm },
+});
