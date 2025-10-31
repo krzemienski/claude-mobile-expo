@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "claude-code-mobile",
+    "slug": "claude-code-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "claudecodemobile",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourcompany.claudecodemobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0f0c29",
+        "foregroundImage": "./assets/images/android-icon-foreground.png"
+      },
+      "package": "com.yourcompany.claudecodemobile"
+    },
+    "web": {
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0f0c29"
+        }
+      ]
+    ],
+    "experiments": {
+      "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "6d767b9c-ffac-4d5e-a12b-66da488313a6"
+      }
+    },
+    "owner": "krzemienski"
+  }
+}
