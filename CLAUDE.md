@@ -25,10 +25,13 @@ Claude Code Mobile is a production-ready iOS mobile application that replicates 
 - **Runtime**: Node.js 18+
 - **Framework**: Express 4.19.2
 - **WebSocket**: ws 8.18.0
-- **Claude API**: @anthropic-ai/sdk 0.32.1
-- **Git**: simple-git 3.25.0
+- **Claude Integration**: @anthropic-ai/claude-agent-sdk 0.1.30
+- **Claude Code CLI**: Required on backend server (npm install -g claude-code)
 - **Logging**: Winston 3.11.0
 - **Security**: helmet 8.0.0, cors 2.8.5, express-rate-limit 7.5.0
+
+**IMPORTANT**: Backend uses Claude Code CLI installation, NOT direct API calls.
+**Prerequisites**: claude-code CLI must be installed and authenticated on backend server.
 
 ### Frontend (IN PROGRESS 📝)
 - **Framework**: React Native 0.81.5
@@ -44,30 +47,34 @@ Claude Code Mobile is a production-ready iOS mobile application that replicates 
 
 ## Current Implementation Status
 
-### Backend Implementation (Phase 3 - COMPLETE)
+### Backend Implementation (Phase 3 - COMPLETE, Restructured for CLI)
 
-**Files Implemented** (12 total in `backend/src/`):
-1. ✅ `index.ts` - Express server with WebSocket upgrade, security middleware, health checks
-2. ✅ `utils/logger.ts` - Winston logger with file transports, color-coded console
-3. ✅ `middleware/errorHandler.ts` - AppError class, error middleware, async wrapper
-4. ✅ `middleware/rateLimiter.ts` - Standard/strict rate limiting, WebSocket connection limiter
-5. ✅ `websocket/server.ts` - WebSocket server setup, heartbeat ping/pong, perMessageDeflate
-6. ✅ `websocket/sessionManager.ts` - Session CRUD, file persistence, 30-day cleanup
-7. ✅ `websocket/messageHandler.ts` - Message routing, 10 message types, slash commands
-8. ✅ `services/claude.service.ts` - Claude API streaming, tool execution, agentic loop
-9. ✅ `services/toolExecutor.ts` - 10 tools (exceeds spec's 6 tools)
-10. ✅ `services/file.service.ts` - File operations with path sanitization
-11. ✅ `services/git.service.ts` - Git operations wrapper (simple-git)
-12. ✅ `services/command.service.ts` - 20+ slash commands
+**Files Implemented** (8 total in `backend/src/`):
+1. ✅ `index.ts` - Express server, WebSocket upgrade, security, health checks, CLI validation
+2. ✅ `utils/logger.ts` - Winston logger with file transports
+3. ✅ `middleware/errorHandler.ts` - AppError class, error middleware
+4. ✅ `middleware/rateLimiter.ts` - Rate limiting (HTTP + WebSocket)
+5. ✅ `websocket/server.ts` - WebSocket server, heartbeat, perMessageDeflate
+6. ✅ `websocket/sessionManager.ts` - Session CRUD, file persistence
+7. ✅ `websocket/messageHandler.ts` - Message routing (simplified)
+8. ✅ `services/claude.service.ts` - Agent SDK integration (uses Claude Code CLI)
+
+**Architecture**: Uses Claude Agent SDK → Claude Code CLI → Claude API
+**No API Key Needed**: Backend uses CLI's authentication
 
 **Backend Features**:
-- 10 Claude Code tools (read_file, write_file, list_files, search_files, execute_command, git_status, git_diff, git_add, git_commit, git_log)
-- 20+ slash commands (/help, /status, /files, /read, /write, /diff, /log, /branch, /checkout, /commit, /push, /pull, /stash, /cost, etc.)
+- All Claude Code CLI tools automatically available (Read, Write, Bash, Grep, Glob, Edit, etc.)
+- All Claude Code CLI slash commands (/help, /cost, /clear, /compact, /mcp, /config)
 - WebSocket protocol: init_session, message, content_delta, tool_execution, tool_result, message_complete
-- Security: Path validation, command blocking, rate limiting (100 req/15min), file type whitelist
-- Streaming: Real-time Claude API responses with tool execution continuation
-- Cost tracking: $0.003/1k input tokens, $0.015/1k output tokens
-- Session persistence: File-based JSON storage in `data/sessions/`
+- Security: Handled by Claude Code CLI (path validation, command blocking, etc.)
+- Streaming: Real-time responses via Agent SDK AsyncGenerator
+- Cost tracking: Automatic via SDK (total_cost_usd provided)
+- Session persistence: File-based JSON storage in `data/sessions/` (mobile sessions)
+
+**Prerequisites** (Backend Server):
+- Claude Code CLI installed: `npm install -g claude-code`
+- CLI authenticated: `claude-code login`
+- Node.js 18+
 
 **Backend is production-ready and awaiting frontend integration.**
 
@@ -454,15 +461,20 @@ spacing: {
 
 ### Backend
 ```bash
+# Prerequisites: Install and authenticate Claude Code CLI
+npm install -g claude-code
+claude-code login
+
+# Backend setup
 cd backend
-npm install          # Install dependencies
+npm install          # Install dependencies (includes Agent SDK)
 npm run build        # Compile TypeScript
 npm start            # Start server (port 3001)
 npm run dev          # Development with auto-reload
 
 # Environment setup
 cp .env.example .env
-# Add ANTHROPIC_API_KEY to .env
+# No API key needed - uses Claude Code CLI authentication
 ```
 
 ### Frontend

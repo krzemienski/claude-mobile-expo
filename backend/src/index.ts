@@ -6,7 +6,6 @@ import cors from 'cors';
 import compression from 'compression';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
-import path from 'path';
 import fs from 'fs';
 import { logger, loggerStream } from './utils/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
@@ -16,14 +15,36 @@ import { setupWebSocket } from './websocket/server';
 // Load environment variables
 dotenv.config();
 
-// Validate required environment variables
-const requiredEnvVars = ['ANTHROPIC_API_KEY'];
-const missingEnvVars = requiredEnvVars.filter((envVar) => !process.env[envVar]);
-
-if (missingEnvVars.length > 0) {
-  logger.error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
-  process.exit(1);
+// Validate Claude Code CLI is available
+// The backend uses @anthropic-ai/claude-agent-sdk which requires Claude Code CLI
+// to be installed and authenticated on this server
+async function validateClaudeCLI(): Promise<void> {
+  try {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    
+    // Check if claude-code CLI is installed
+    try {
+      const { stdout } = await execAsync('claude-code --version');
+      logger.info(`✅ Claude Code CLI detected: ${stdout.trim()}`);
+    } catch (error) {
+      logger.error('❌ Claude Code CLI not found!');
+      logger.error('Please install: npm install -g claude-code');
+      logger.error('Then authenticate: claude-code login');
+      process.exit(1);
+    }
+  } catch (error: any) {
+    logger.error('Error validating Claude Code CLI:', error);
+    process.exit(1);
+  }
 }
+
+// Validate CLI before starting (will be called after server setup)
+validateClaudeCLI().catch((error) => {
+  logger.error('CLI validation failed:', error);
+  process.exit(1);
+});
 
 // Initialize Express app
 const app: Express = express();
@@ -91,7 +112,7 @@ app.use(express.urlencoded({ extended: true, limit: process.env.MAX_FILE_SIZE ||
 app.use(rateLimiter);
 
 // Health check endpoint (no authentication required)
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -108,7 +129,7 @@ app.get('/health', (req, res) => {
 });
 
 // Info endpoint
-app.get('/info', (req, res) => {
+app.get('/info', (_req, res) => {
   res.json({
     name: 'Claude Code Mobile Backend',
     version: process.env.npm_package_version || '1.0.0',
@@ -150,10 +171,8 @@ server.listen(Number(PORT), HOST, () => {
   logger.info(`📍 Server:      http://${HOST}:${PORT}`);
   logger.info(`📡 WebSocket:   ws://${HOST}:${PORT}/ws`);
   logger.info(`🔐 Environment: ${NODE_ENV}`);
-  logger.info(`🔑 API Key:     ${process.env.ANTHROPIC_API_KEY ? '✓ Configured' : '✗ Missing'}`);
-  logger.info(`🧠 Model:       ${process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514'}`);
-  logger.info(`⚡ Max Tokens:  ${process.env.ANTHROPIC_MAX_TOKENS || '8192'}`);
-  logger.info(`🌡️  Temperature: ${process.env.ANTHROPIC_TEMPERATURE || '1'}`);
+  logger.info(`🤖 Claude:      Via Agent SDK → Claude Code CLI`);
+  logger.info(`🔑 Auth:        Using Claude Code CLI authentication`);
   logger.info(`📊 Rate Limit:  ${process.env.RATE_LIMIT_MAX_REQUESTS || '100'} req/${parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000') / 60000}min`);
   logger.info('='.repeat(50));
 });

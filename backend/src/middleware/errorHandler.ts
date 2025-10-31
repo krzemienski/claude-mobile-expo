@@ -5,11 +5,17 @@ import { logger } from '../utils/logger';
  * Custom error class for application errors
  */
 export class AppError extends Error {
+  public statusCode: number;
+  public isOperational: boolean;
+  
   constructor(
-    public statusCode: number,
-    public message: string,
-    public isOperational = true
+    statusCode: number,
+    message: string,
+    isOperational = true
   ) {
+    super(message);
+    this.statusCode = statusCode;
+    this.isOperational = isOperational;
     super(message);
     Object.setPrototypeOf(this, AppError.prototype);
     Error.captureStackTrace(this, this.constructor);
@@ -24,7 +30,7 @@ export function errorHandler(
   err: Error | AppError,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void {
   // Default error values
   let statusCode = 500;
@@ -71,7 +77,7 @@ export function errorHandler(
  */
 export function notFoundHandler(
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ): void {
   const error = new AppError(404, `Route ${req.originalUrl} not found`);

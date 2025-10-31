@@ -116,7 +116,7 @@ export class SessionManager {
   /**
    * Get existing session by ID
    */
-  async getSession(sessionId: string): Promise<Session | null> {
+  async getSession(sessionId: string): Promise<Session | undefined> {
     // Check in-memory cache first
     let session = this.sessions.get(sessionId);
 
@@ -128,7 +128,7 @@ export class SessionManager {
       }
     }
 
-    return session || null;
+    return session;
   }
 
   /**
@@ -296,7 +296,7 @@ export class SessionManager {
   /**
    * Load session from disk
    */
-  private async loadSession(sessionId: string): Promise<Session | null> {
+  private async loadSession(sessionId: string): Promise<Session | undefined> {
     try {
       const sessionFile = path.join(this.sessionsDir, `${sessionId}.json`);
       const data = await fs.readFile(sessionFile, 'utf-8');
@@ -313,7 +313,7 @@ export class SessionManager {
       return session;
     } catch (error) {
       // Session file doesn't exist
-      return null;
+      return undefined;
     }
   }
 

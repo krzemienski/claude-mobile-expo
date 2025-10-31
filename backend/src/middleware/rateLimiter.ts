@@ -13,12 +13,8 @@ const MAX_REQUESTS = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'); // 
  * Uses IP address by default, but can be extended to use user ID
  */
 const keyGenerator = (req: Request): string => {
-  // If user is authenticated, use their ID
-  if (req.user && (req.user as any).id) {
-    return `user_${(req.user as any).id}`;
-  }
-
-  // Otherwise use IP address
+  // Use IP address for rate limiting
+  // Note: User authentication not implemented in CLI proxy architecture
   return req.ip || req.socket.remoteAddress || 'unknown';
 };
 

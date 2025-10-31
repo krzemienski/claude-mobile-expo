@@ -80,11 +80,7 @@ export class MessageHandler {
           await this.handleDeleteSession(ws, payload, connectionId);
           break;
 
-        case MessageType.SLASH_COMMAND:
-          await this.handleSlashCommand(ws, payload, connectionId);
-          break;
-
-        case MessageType.PING:
+case MessageType.PING:
           this.handlePing(ws);
           break;
 
@@ -166,15 +162,12 @@ export class MessageHandler {
     }
 
     const session = this.sessionManager.getSessionByConnection(connectionId);
-    if (!session) {
+    if (!session || session === null) {
       throw new Error('No active session. Please initialize a session first.');
     }
 
-    // Check for slash commands
-    if (content.startsWith('/')) {
-      await this.handleSlashCommand(ws, { command: content }, connectionId);
-      return;
-    }
+    // Note: Slash commands (like /help, /cost, /clear) are handled automatically
+    // by Claude Code CLI via the Agent SDK - no special handling needed here
 
     // Create user message
     const userMessage: Message = {
@@ -223,7 +216,7 @@ export class MessageHandler {
   private async handleClaudeEvent(
     ws: WebSocket,
     event: any,
-    session: any,
+    _session: any,
     assistantMessage: Message
   ): Promise<void> {
     switch (event.type) {
@@ -318,7 +311,7 @@ export class MessageHandler {
   /**
    * List all sessions
    */
-  private async handleListSessions(ws: WebSocket, connectionId: string): Promise<void> {
+  private async handleListSessions(ws: WebSocket, _connectionId: string): Promise<void> {
     const sessions = await this.sessionManager.listSessions();
 
     // Send session list (without full conversation history)
@@ -344,7 +337,7 @@ export class MessageHandler {
   /**
    * Get full session data
    */
-  private async handleGetSession(ws: WebSocket, payload: any, connectionId: string): Promise<void> {
+  private async handleGetSession(ws: WebSocket, payload: any, _connectionId: string): Promise<void> {
     const { sessionId } = payload;
 
     if (!sessionId) {
@@ -371,7 +364,7 @@ export class MessageHandler {
   private async handleDeleteSession(
     ws: WebSocket,
     payload: any,
-    connectionId: string
+    _connectionId: string
   ): Promise<void> {
     const { sessionId } = payload;
 
@@ -390,70 +383,7 @@ export class MessageHandler {
     );
   }
 
-  /**
-   * Handle slash commands
-   */
-  private async handleSlashCommand(
-    ws: WebSocket,
-    payload: any,
-    connectionId: string
-  ): Promise<void> {
-    const { command } = payload;
 
-    if (!command || typeof command !== 'string') {
-      throw new Error('Command is required and must be a string');
-    }
-
-    const session = this.sessionManager.getSessionByConnection(connectionId);
-    if (!session) {
-      throw new Error('No active session');
-    }
-
-    // Parse command
-    const parts = command.trim().split(/\s+/);
-    const cmd = parts[0].toLowerCase();
-    const args = parts.slice(1);
-
-    let response = '';
-
-    try {
-      switch (cmd) {
-        case '/help':
-          response = this.getHelpText();
-          break;
-
-        case '/stats':
-          response = this.getSessionStats(session);
-          break;
-
-        case '/clear':
-          session.conversationHistory = [];
-          await this.sessionManager.updateSession(session.id, {
-            conversationHistory: [],
-          });
-          response = 'Conversation history cleared.';
-          break;
-
-        case '/cost':
-          response = this.getCostEstimate(session);
-          break;
-
-        default:
-          response = `Unknown command: ${cmd}. Type /help for available commands.`;
-      }
-
-      ws.send(
-        JSON.stringify({
-          type: MessageType.SLASH_COMMAND_RESPONSE,
-          command: cmd,
-          response,
-          timestamp: new Date().toISOString(),
-        })
-      );
-    } catch (error: any) {
-      this.sendError(ws, `Command error: ${error.message}`);
-    }
-  }
 
   /**
    * Handle ping
@@ -480,49 +410,5 @@ export class MessageHandler {
     );
   }
 
-  /**
-   * Get help text
-   */
-  private getHelpText(): string {
-    return `
-Available Commands:
-/help    - Show this help message
-/stats   - Show session statistics
-/clear   - Clear conversation history
-/cost    - Show estimated API costs
-    `.trim();
-  }
 
-  /**
-   * Get session statistics
-   */
-  private getSessionStats(session: any): string {
-    return `
-Session Statistics:
-- Session ID: ${session.id}
-- Messages: ${session.conversationHistory.length}
-- Total Tokens: ${session.metadata.totalTokensUsed || 0}
-- Created: ${new Date(session.createdAt).toLocaleString()}
-- Last Active: ${new Date(session.lastActiveAt).toLocaleString()}
-    `.trim();
-  }
-
-  /**
-   * Get cost estimate
-   */
-  private getCostEstimate(session: any): string {
-    const tokens = session.metadata.totalTokensUsed || 0;
-    // Claude Sonnet 4 pricing (approximate)
-    const inputCost = 0.003; // per 1K tokens
-    const outputCost = 0.015; // per 1K tokens
-    const avgCost = (inputCost + outputCost) / 2;
-    const estimatedCost = (tokens / 1000) * avgCost;
-
-    return `
-Cost Estimate:
-- Total Tokens: ${tokens.toLocaleString()}
-- Estimated Cost: $${estimatedCost.toFixed(4)}
-Note: This is an estimate based on average token costs.
-    `.trim();
-  }
 }
