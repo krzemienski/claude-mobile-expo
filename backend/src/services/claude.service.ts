@@ -43,7 +43,9 @@ export class ClaudeService {
     onEvent: (event: StreamEvent) => Promise<void>
   ): Promise<void> {
     try {
-      logger.info(`Streaming via Agent SDK for session ${session.id}`);
+      logger.info(`[ClaudeService] Starting stream for session ${session.id}`);
+      logger.info(`[ClaudeService] Project path: ${session.projectPath}`);
+      logger.info(`[ClaudeService] User message: ${userMessage.substring(0, 100)}`);
 
       let totalCostUSD = 0;
       let totalInputTokens = 0;
@@ -53,6 +55,9 @@ export class ClaudeService {
       for await (const message of query({
         prompt: userMessage,
         options: {
+          // Path to Claude CLI (SDK auto-detects at /Users/nick/.local/bin/claude)
+          // pathToClaudeCodeExecutable: '/Users/nick/.local/bin/claude',
+          
           // Use Claude Code system prompt
           systemPrompt: { type: 'preset', preset: 'claude_code' },
           
@@ -64,6 +69,9 @@ export class ClaudeService {
           
           // Max turns to prevent infinite loops
           maxTurns: 20,
+          
+          // Permission mode: auto-accept file edits for mobile use case
+          permissionMode: 'acceptEdits',
         }
       })) {
         logger.debug(`SDK message type: ${message.type}`);

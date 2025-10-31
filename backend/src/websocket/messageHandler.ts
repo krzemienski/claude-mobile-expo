@@ -58,6 +58,10 @@ export class MessageHandler {
   async handle(ws: WebSocket, message: any, connectionId: string): Promise<void> {
     const { type, ...payload } = message;
 
+    // DEBUG: Log all incoming messages
+    logger.info(`[MessageHandler] Received message type: ${type} from connection: ${connectionId}`);
+    logger.debug(`[MessageHandler] Full message:`, JSON.stringify(message));
+
     try {
       switch (type) {
         case MessageType.INIT_SESSION:

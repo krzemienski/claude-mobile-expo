@@ -91,6 +91,7 @@ export class SessionManager {
    */
   async createSession(projectPath: string): Promise<Session> {
     const sessionId = uuidv4();
+    logger.info(`[SessionManager] Creating new session: ${sessionId} for path: ${projectPath}`);
     
     const session: Session = {
       id: sessionId,

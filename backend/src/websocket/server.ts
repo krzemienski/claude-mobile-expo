@@ -80,8 +80,11 @@ export function setupWebSocket(server: HTTPServer): WebSocketServer {
 
     // Handle incoming messages
     ws.on('message', async (data: Buffer) => {
+      logger.info(`[WebSocket] Received message from ${connectionId}, length: ${data.length} bytes`);
+      logger.debug(`[WebSocket] Raw data: ${data.toString().substring(0, 200)}`);
       try {
         const message = JSON.parse(data.toString());
+        logger.info(`[WebSocket] Parsed message type: ${message.type}`);
         
         // Validate message structure
         if (!message.type) {
@@ -96,7 +99,9 @@ export function setupWebSocket(server: HTTPServer): WebSocketServer {
         logger.debug(`Received message from ${connectionId}:`, JSON.stringify(logMessage));
 
         // Handle the message
+        logger.info(`[WebSocket] Calling messageHandler.handle()...`);
         await messageHandler.handle(ws, message, connectionId);
+        logger.info(`[WebSocket] messageHandler.handle() completed`);
       } catch (error: any) {
         logger.error(`Error handling message from ${connectionId}:`, error);
         
