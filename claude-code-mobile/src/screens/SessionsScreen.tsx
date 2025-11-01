@@ -32,9 +32,23 @@ export const SessionsScreen: React.FC<SessionsScreenProps> = ({ navigation }) =>
     setIsLoading(true);
     try {
       const response = await httpService.listSessions();
-      // TODO: Update Zustand store with backend sessions
-      // For now, just log them
-      console.log('Backend sessions:', response);
+      // Map backend sessions to frontend Session type and update store
+      const backendSessions = response.data || [];
+      const mappedSessions = backendSessions.map((s: any) => ({
+        id: s.id,
+        projectId: s.project_id,
+        title: s.title || `Session ${s.id.substring(0, 8)}`,
+        messages: [], // Messages loaded separately
+        createdAt: new Date(s.created_at),
+        lastActive: new Date(s.updated_at),
+        model: s.model,
+        systemPrompt: s.system_prompt || undefined,
+        totalTokens: s.total_tokens || 0,
+        totalCost: s.total_cost || 0,
+      }));
+
+      // Update Zustand store with backend sessions
+      useAppStore.setState({ sessions: mappedSessions });
     } catch (error) {
       console.error('Failed to load sessions:', error);
     } finally {
