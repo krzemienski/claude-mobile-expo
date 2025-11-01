@@ -40,12 +40,7 @@
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
-    "plugins": [
-      "expo-router"
-    ],
-    "experiments": {
-      "typedRoutes": true
-    },
+    "plugins": [],
     "scheme": "claudecode"
   }
 }
