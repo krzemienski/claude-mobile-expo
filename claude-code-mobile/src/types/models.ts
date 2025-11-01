@@ -137,6 +137,7 @@ export interface AppSettings {
   serverUrl: string;
   apiKey?: string;
   projectPath: string;
+  model: string;
   autoScroll: boolean;
   hapticFeedback: boolean;
   darkMode: boolean;

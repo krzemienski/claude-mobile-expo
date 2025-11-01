@@ -16,19 +16,19 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { ConnectionStatus as Status } from '../types/websocket';
+import { ConnectionStatus as ConnectionStatusType } from '../services/http/types';
 import { COLORS, SPACING, TYPOGRAPHY } from '../constants/theme';
 
 interface ConnectionStatusProps {
-  status: Status;
+  status: ConnectionStatusType;
 }
 
-export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ status }) => {
+export function ConnectionStatus({ status }: ConnectionStatusProps) {
   const dotScale = useSharedValue(1);
 
   useEffect(() => {
     // Pulse animation when connecting/reconnecting
-    if (status === Status.CONNECTING || status === Status.RECONNECTING) {
+    if (status === 'connecting' || status === 'reconnecting') {
       dotScale.value = withRepeat(
         withSequence(
           withTiming(1.3, { duration: 600 }),
@@ -48,13 +48,13 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ status }) =>
 
   const getDotColor = () => {
     switch (status) {
-      case Status.CONNECTED:
+      case 'connected':
         return COLORS.success;
-      case Status.CONNECTING:
-      case Status.RECONNECTING:
+      case 'connecting':
+      case 'reconnecting':
         return COLORS.warning;
-      case Status.DISCONNECTED:
-      case Status.ERROR:
+      case 'disconnected':
+      case 'error':
         return COLORS.error;
       default:
         return COLORS.textSecondary;
@@ -63,15 +63,15 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ status }) =>
 
   const getStatusText = () => {
     switch (status) {
-      case Status.CONNECTED:
+      case 'connected':
         return 'Connected';
-      case Status.CONNECTING:
+      case 'connecting':
         return 'Connecting...';
-      case Status.RECONNECTING:
+      case 'reconnecting':
         return 'Reconnecting...';
-      case Status.DISCONNECTED:
+      case 'disconnected':
         return 'Disconnected';
-      case Status.ERROR:
+      case 'error':
         return 'Connection Error';
       default:
         return 'Unknown';
@@ -93,7 +93,7 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ status }) =>
       </Text>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {

@@ -3,19 +3,44 @@
  * Based on spec lines 758-774
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppStore } from '../store/useAppStore';
+import { useHTTP } from '../contexts/HTTPContext';
 import { Session } from '../types/models';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants/theme';
 import type { SessionsScreenProps } from '../types/navigation';
 
 export const SessionsScreen: React.FC<SessionsScreenProps> = ({ navigation }) => {
+  const { httpService } = useHTTP();
+  const [isLoading, setIsLoading] = useState(false);
+  
   const sessions = useAppStore((state) => state.sessions);
   const setCurrentSession = useAppStore((state) => state.setCurrentSession);
   const deleteSession = useAppStore((state) => state.deleteSession);
+
+  // Load sessions from backend on mount
+  useEffect(() => {
+    loadSessions();
+  }, []);
+
+  const loadSessions = async () => {
+    if (!httpService) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await httpService.listSessions();
+      // TODO: Update Zustand store with backend sessions
+      // For now, just log them
+      console.log('Backend sessions:', response);
+    } catch (error) {
+      console.error('Failed to load sessions:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const formatTimeAgo = (date: Date) => {
     const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
@@ -30,7 +55,17 @@ export const SessionsScreen: React.FC<SessionsScreenProps> = ({ navigation }) =>
     navigation.navigate('Chat');
   };
 
-  const handleDeleteSession = (sessionId: string) => {
+  const handleDeleteSession = async (sessionId: string) => {
+    // Delete from backend first
+    if (httpService) {
+      try {
+        await httpService.deleteSession(sessionId);
+      } catch (error) {
+        console.error('Failed to delete session from backend:', error);
+      }
+    }
+    
+    // Delete from local store
     deleteSession(sessionId);
   };
 
@@ -64,7 +99,7 @@ export const SessionsScreen: React.FC<SessionsScreenProps> = ({ navigation }) =>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Your Sessions</Text>
-          <TouchableOpacity testID="refresh-button">
+          <TouchableOpacity testID="refresh-button" onPress={loadSessions}>
             <Text style={styles.refreshIcon}>🔄</Text>
           </TouchableOpacity>
         </View>

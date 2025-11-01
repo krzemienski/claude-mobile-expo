@@ -71,24 +71,44 @@ export class HTTPClient {
   ): Promise<T> {
     const url = `${this.config.baseURL}${endpoint}`;
 
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...this.config.headers,
-        ...options.headers,
-      },
-      signal: options.signal || AbortSignal.timeout(this.config.timeout || 60000),
-    });
+    // Create manual timeout for React Native (AbortSignal.timeout not available)
+    let timeoutId: NodeJS.Timeout | undefined;
+    let abortController: AbortController | undefined;
+    
+    const signal = options.signal || (() => {
+      abortController = new AbortController();
+      const timeout = this.config.timeout || 60000;
+      timeoutId = setTimeout(() => {
+        abortController?.abort();
+      }, timeout);
+      return abortController.signal;
+    })();
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({
-        error: { message: response.statusText }
-      }));
-      throw new Error(error.error?.message || `HTTP ${response.status}`);
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.config.headers,
+          ...options.headers,
+        },
+        signal,
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({
+          error: { message: response.statusText }
+        }));
+        throw new Error(error.error?.message || `HTTP ${response.status}`);
+      }
+
+      return response.json();
+    } finally {
+      // Clear timeout to prevent memory leak
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     }
-
-    return response.json();
   }
 
   /**

@@ -113,4 +113,4 @@ export interface HealthResponse {
   active_sessions: number;
 }
 
-export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'error';
+export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'reconnecting' | 'error';

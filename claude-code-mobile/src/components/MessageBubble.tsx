@@ -51,7 +51,10 @@ export const MessageBubble = React.memo<MessageBubbleProps>(
       </View>
     );
   },
-  (prevProps, nextProps) => prevProps.message.id === nextProps.message.id
+  (prevProps, nextProps) => 
+    prevProps.message.id === nextProps.message.id &&
+    prevProps.message.content === nextProps.message.content &&
+    prevProps.message.isStreaming === nextProps.message.isStreaming
 );
 
 const styles = StyleSheet.create({

@@ -4,6 +4,7 @@
  */
 
 import { HTTPClient, ChatCompletionRequest, ChatCompletionResponse } from './http.client';
+import { Message } from './types';
 import { SSEClient, createChatCompletionStream } from './sse.client';
 
 export interface HTTPServiceConfig {
@@ -14,7 +15,7 @@ export interface HTTPServiceConfig {
 
 export interface StreamingChatRequest {
   model: string;
-  messages: Array<{ role: string; content: string }>;
+  messages: Message[];
   session_id?: string;
   project_id?: string;
   onChunk: (content: string) => void;
@@ -112,7 +113,7 @@ export class HTTPService {
    */
   async sendMessage(
     model: string,
-    messages: Array<{ role: string; content: string }>,
+    messages: Message[],
     sessionId?: string,
     projectId?: string
   ): Promise<ChatCompletionResponse> {
@@ -142,9 +143,9 @@ export class HTTPService {
    * Cancel all active streams
    */
   cancelAllStreams(): void {
-    for (const [id, stream] of this.activeStreams.entries()) {
+    Array.from(this.activeStreams.entries()).forEach(([id, stream]) => {
       stream.stop();
-    }
+    });
     this.activeStreams.clear();
   }
 

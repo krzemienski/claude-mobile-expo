@@ -38,7 +38,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
               style={styles.input}
               value={settings.serverUrl}
               onChangeText={(url) => updateSettings({ serverUrl: url })}
-              placeholder="ws://localhost:3001/ws"
+              placeholder="http://localhost:8001"
               placeholderTextColor={COLORS.textSecondary}
               autoCapitalize="none"
               autoCorrect={false}
@@ -53,6 +53,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
               value={settings.projectPath}
               onChangeText={(path) => updateSettings({ projectPath: path })}
               placeholder="/path/to/project"
+              placeholderTextColor={COLORS.textSecondary}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+
+          <View style={styles.inputField}>
+            <Text style={styles.label}>Claude Model</Text>
+            <TextInput
+              testID="model-input"
+              style={styles.input}
+              value={settings.model}
+              onChangeText={(model) => updateSettings({ model })}
+              placeholder="claude-3-5-haiku-20241022"
               placeholderTextColor={COLORS.textSecondary}
               autoCapitalize="none"
               autoCorrect={false}

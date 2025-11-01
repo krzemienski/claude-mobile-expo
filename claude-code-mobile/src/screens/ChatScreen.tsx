@@ -26,14 +26,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useAppStore } from '../store/useAppStore';
-import { useWebSocket } from '../contexts/WebSocketContext';
+import { useHTTP } from '../contexts/HTTPContext';
 import { Message, MessageRole } from '../types/models';
 import { MessageBubble } from '../components/MessageBubble';
 import { StreamingIndicator } from '../components/StreamingIndicator';
 import { ToolExecutionCard } from '../components/ToolExecutionCard';
 import { ConnectionStatus } from '../components/ConnectionStatus';
 import { SlashCommandMenu } from '../components/SlashCommandMenu';
-import { ConnectionStatus as Status } from '../types/websocket';
+import { ConnectionStatus as Status } from '../services/http/types';
 import { COLORS, SPACING, TYPOGRAPHY } from '../constants/theme';
 import type { ChatScreenProps } from '../types/navigation';
 
@@ -43,8 +43,8 @@ export const ChatScreen: React.FC<ChatScreenProps> = () => {
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
-  // WebSocket service from context
-  const { wsService } = useWebSocket();
+  // HTTP service from context
+  const { httpService } = useHTTP();
 
   // Zustand selectors for optimized re-renders
   const messages = useAppStore((state) => state.messages);
@@ -54,7 +54,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = () => {
   const setStreaming = useAppStore((state) => state.setStreaming);
 
   // Connection status from Zustand
-  const connectionStatus = isConnected ? Status.CONNECTED : Status.DISCONNECTED;
+  const connectionStatus: Status = isConnected ? 'connected' : 'disconnected';
 
   // Handle input change
   const handleInputChange = useCallback((text: string) => {
@@ -69,34 +69,79 @@ export const ChatScreen: React.FC<ChatScreenProps> = () => {
   }, []);
 
   // Handle send message
-  const handleSend = useCallback(() => {
-    if (!inputText.trim() || isStreaming) {
+  const handleSend = useCallback(async () => {
+    if (!inputText.trim() || isStreaming || !httpService) {
       return;
     }
 
-    // Create optimistic message (Stream pattern)
+    const { addMessage, updateMessage, setStreaming, settings } = useAppStore.getState();
+
+    // Create optimistic user message
     const userMessage: Message = {
-      id: `temp-${Date.now()}`,
+      id: `msg-${Date.now()}-user`,
       role: MessageRole.USER,
       content: inputText,
       timestamp: new Date(),
     };
 
-    console.log('[ChatScreen] handleSend() called, inputText:', inputText);
-    console.log('[ChatScreen] wsService:', wsService ? 'AVAILABLE' : 'NULL');
-
     addMessage(userMessage);
+    const messageContent = inputText;
     setInputText('');
     setShowSlashMenu(false);
     setStreaming(true);
 
-    // Send via WebSocket service
-    if (wsService) {
-      console.log('[ChatScreen] Calling wsService.sendMessage()...');
-      wsService.sendMessage(inputText);
-      console.log('[ChatScreen] wsService.sendMessage() returned');
-    } else {
-      console.error('[ChatScreen] WebSocket service not available');
+    // Create assistant message placeholder
+    const assistantMessageId = `msg-${Date.now()}-assistant`;
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      role: MessageRole.ASSISTANT,
+      content: '',
+      timestamp: new Date(),
+      isStreaming: true,
+    };
+    addMessage(assistantMessage);
+
+    // Get current messages for context
+    const currentMessages = useAppStore.getState().messages;
+    const httpMessages = currentMessages
+      .filter(m => !m.isStreaming) // Exclude streaming placeholder
+      .map(m => ({
+        role: m.role as 'user' | 'assistant' | 'system',
+        content: m.content,
+      }));
+
+    try {
+      // Send via HTTP with streaming
+      await httpService.sendMessageStreaming({
+        model: settings.model || 'claude-3-5-haiku-20241022',
+        messages: httpMessages,
+        session_id: useAppStore.getState().currentSession?.id,
+        onChunk: (content) => {
+          // Update assistant message with accumulated content
+          const currentContent = useAppStore.getState().messages
+            .find(m => m.id === assistantMessageId)?.content || '';
+          updateMessage(assistantMessageId, {
+            content: currentContent + content,
+          });
+        },
+        onComplete: () => {
+          // Finalize assistant message
+          updateMessage(assistantMessageId, {
+            isStreaming: false,
+          });
+          setStreaming(false);
+        },
+        onError: (error) => {
+          console.error('Streaming error:', error);
+          updateMessage(assistantMessageId, {
+            content: `Error: ${error.message}`,
+            isStreaming: false,
+          });
+          setStreaming(false);
+        },
+      });
+    } catch (error) {
+      console.error('Failed to send message:', error);
       setStreaming(false);
     }
 
@@ -104,7 +149,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = () => {
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
     }, 100);
-  }, [inputText, isStreaming, addMessage]);
+  }, [inputText, isStreaming, httpService]);
 
   // Handle slash command selection
   const handleSelectCommand = useCallback((command: string) => {

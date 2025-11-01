@@ -113,7 +113,7 @@ export class SSEClient {
 
       this.config.onComplete?.();
     } catch (error) {
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         // Connection aborted - normal
         return;
       }
@@ -151,7 +151,7 @@ export class SSEClient {
   /**
    * Get unprocessed buffer (incomplete events)
    */
-  private getUnprocessedBuffer(buffer: string): string[] {
+  private getUnprocessedBuffer(buffer: string): string {
     // Keep lines that don't form complete events yet
     const lines = buffer.split('\n');
     const lastCompleteEventIndex = buffer.lastIndexOf('\n\n');
