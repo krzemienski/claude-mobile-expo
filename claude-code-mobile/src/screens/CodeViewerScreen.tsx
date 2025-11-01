@@ -3,22 +3,41 @@
  * Based on spec lines 609-675
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useHTTP } from '../contexts/HTTPContext';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants/theme';
 import type { CodeViewerScreenProps } from '../types/navigation';
 
 export const CodeViewerScreen: React.FC<CodeViewerScreenProps> = ({ navigation, route }) => {
+  const { httpService } = useHTTP();
   const { filePath, fileName } = route.params;
-  
-  // Mock content - would be loaded from WebSocket service
-  const content = `import React from 'react';\n\nexport const Component = () => {\n  return <View />;\n};`;
-  const lineCount = content.split('\\n').length;
+  const [content, setContent] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    loadFile();
+  }, [filePath]);
+
+  const loadFile = async () => {
+    if (!httpService) return;
+    setIsLoading(true);
+    try {
+      const data = await httpService.httpClient.readFile(filePath);
+      setContent(data.content);
+    } catch (error) {
+      console.error('Failed to load file:', error);
+      setContent(`Error loading file: ${error}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const lineCount = content.split('\n').length;
 
   return (
-    <LinearGradient colors={[COLORS.backgroundGradient.start, COLORS.backgroundGradient.middle, COLORS.backgroundGradient.end]} style={styles.gradient}>
+    <View style={styles.background}>
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
         <View testID="codeviewer-header" style={styles.header}>
           <TouchableOpacity testID="back-button" onPress={() => navigation.goBack()}>
@@ -41,21 +60,21 @@ export const CodeViewerScreen: React.FC<CodeViewerScreenProps> = ({ navigation, 
           <Text style={styles.footerText}>Characters: {content.length} • Words: {content.split(/\\s+/).length}</Text>
         </View>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
+  background: { flex: 1, backgroundColor: COLORS.background },
   container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 60, paddingHorizontal: SPACING.base, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   backIcon: { fontSize: 28, color: COLORS.primary },
   title: { fontSize: TYPOGRAPHY.fontSize.lg, fontWeight: TYPOGRAPHY.fontWeight.bold, color: COLORS.textPrimary, flex: 1, textAlign: 'center' },
-  fileInfo: { padding: SPACING.base, backgroundColor: 'rgba(0, 0, 0, 0.3)', borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  fileInfo: { padding: SPACING.base, backgroundColor: COLORS.card, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   fileName: { fontSize: TYPOGRAPHY.fontSize.lg, fontWeight: TYPOGRAPHY.fontWeight.bold, color: COLORS.textPrimary },
   fileStats: { fontSize: TYPOGRAPHY.fontSize.base, color: COLORS.textSecondary, marginTop: SPACING.xs },
   codeContainer: { flex: 1, backgroundColor: COLORS.codeBackground, padding: SPACING.base },
   code: { fontFamily: TYPOGRAPHY.fontFamily.mono, fontSize: TYPOGRAPHY.fontSize.base, color: COLORS.codeText, lineHeight: 20 },
-  footer: { height: 40, backgroundColor: 'rgba(0, 0, 0, 0.3)', justifyContent: 'center', paddingHorizontal: SPACING.base, borderTopWidth: 1, borderTopColor: COLORS.border },
+  footer: { height: 40, backgroundColor: COLORS.card, justifyContent: 'center', paddingHorizontal: SPACING.base, borderTopWidth: 1, borderTopColor: COLORS.border },
   footerText: { fontSize: TYPOGRAPHY.fontSize.sm, color: COLORS.textSecondary },
 });
