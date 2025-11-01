@@ -24,10 +24,13 @@ from claude_code_api.api.models import router as models_router
 from claude_code_api.api.projects import router as projects_router
 from claude_code_api.api.sessions import router as sessions_router
 from claude_code_api.api.files import router as files_router
+from claude_code_api.api.files_upload import router as files_upload_router
 from claude_code_api.api.host import router as host_router
 from claude_code_api.api.git import router as git_router
+from claude_code_api.api.git_remote import router as git_remote_router
 from claude_code_api.api.mcp import router as mcp_router
 from claude_code_api.api.prompts import router as prompts_router
+from claude_code_api.api.stats import router as stats_router
 from claude_code_api.core.auth import auth_middleware
 
 
@@ -179,10 +182,13 @@ app.include_router(models_router, prefix="/v1", tags=["models"])
 app.include_router(projects_router, prefix="/v1", tags=["projects"])
 app.include_router(sessions_router, prefix="/v1", tags=["sessions"])
 app.include_router(files_router, prefix="/v1", tags=["files"])
+app.include_router(files_upload_router, prefix="/v1", tags=["files"])
 app.include_router(host_router, prefix="/v1", tags=["host"])
 app.include_router(git_router, prefix="/v1", tags=["git"])
+app.include_router(git_remote_router, prefix="/v1", tags=["git"])
 app.include_router(mcp_router, prefix="/v1", tags=["mcp"])
 app.include_router(prompts_router, prefix="/v1", tags=["prompts"])
+app.include_router(stats_router, prefix="/v1", tags=["stats"])
 
 
 if __name__ == "__main__":
