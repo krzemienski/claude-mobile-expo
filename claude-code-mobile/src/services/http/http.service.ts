@@ -27,7 +27,7 @@ export interface StreamingChatRequest {
  * Main HTTP Service for backend communication
  */
 export class HTTPService {
-  private httpClient: HTTPClient;
+  public httpClient: HTTPClient; // PUBLIC for screen access
   private activeStreams: Map<string, SSEClient> = new Map();
   private isConnected = false;
 
