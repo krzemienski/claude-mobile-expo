@@ -77,6 +77,11 @@ export class HTTPService {
    * Send message with streaming
    */
   async sendMessageStreaming(request: StreamingChatRequest): Promise<string> {
+    console.log('[HTTPService] sendMessageStreaming called');
+    console.log('[HTTPService] Model:', request.model);
+    console.log('[HTTPService] Messages count:', request.messages.length);
+    console.log('[HTTPService] Messages:', JSON.stringify(request.messages, null, 2));
+
     const streamId = `stream-${Date.now()}`;
 
     const sseClient = createChatCompletionStream(

@@ -17,9 +17,8 @@ const HTTPContext = createContext<HTTPContextType>({
 
 export const useHTTP = () => {
   const context = useContext(HTTPContext);
-  if (!context.httpService) {
-    console.warn('HTTP service not initialized');
-  }
+  // Note: Service being null during initial render is expected behavior.
+  // Only warn if service is actually being used (checked by calling components).
   return context;
 };
 

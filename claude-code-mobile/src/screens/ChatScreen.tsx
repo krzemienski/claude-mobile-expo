@@ -70,10 +70,22 @@ export const ChatScreen: React.FC<ChatScreenProps> = () => {
 
   // Handle send message
   const handleSend = useCallback(async () => {
-    if (!inputText.trim() || isStreaming || !httpService) {
+    console.log('[ChatScreen] handleSend called');
+    console.log('[ChatScreen] inputText:', inputText);
+    console.log('[ChatScreen] isStreaming:', isStreaming);
+    console.log('[ChatScreen] httpService:', httpService ? 'available' : 'null');
+
+    if (!inputText.trim() || isStreaming) {
+      console.log('[ChatScreen] Early return - no input or already streaming');
       return;
     }
 
+    if (!httpService) {
+      console.error('[ChatScreen] HTTP service not available - cannot send message');
+      return;
+    }
+
+    console.log('[ChatScreen] Proceeding with message send');
     const { addMessage, updateMessage, setStreaming, settings } = useAppStore.getState();
 
     // Create optimistic user message

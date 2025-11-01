@@ -1,12 +1,13 @@
 /**
  * SSE (Server-Sent Events) Client for OpenAI-compatible streaming
- * Uses native Expo fetch with ReadableStream support (SDK 52+)
+ * Uses XMLHttpRequest for React Native compatibility
  *
  * Backend: Python FastAPI (port 8001)
  * Format: OpenAI chat completion chunks via SSE
+ *
+ * NOTE: React Native fetch + ReadableStream has issues with SSE.
+ * Using XMLHttpRequest directly for reliable streaming.
  */
-
-import { fetch } from 'expo/fetch';
 
 export interface SSEClientConfig {
   url: string;
@@ -34,142 +35,125 @@ export interface ChatCompletionChunk {
 }
 
 /**
- * SSE Client using native Expo fetch and ReadableStream
- * Parses Server-Sent Events format: "data: {json}\n\n"
+ * SSE Client using XMLHttpRequest for React Native compatibility
  */
 export class SSEClient {
-  private abortController: AbortController | null = null;
+  private xhr: XMLHttpRequest | null = null;
   private isActive = false;
+  private buffer = '';
 
   constructor(private config: SSEClientConfig) {}
 
   /**
-   * Start SSE connection and stream events
+   * Start SSE connection using XHR
    */
   async start(): Promise<void> {
     if (this.isActive) {
       throw new Error('SSE client already active');
     }
 
-    this.abortController = new AbortController();
+    console.log('[SSEClient] Starting XHR SSE connection to:', this.config.url);
+    console.log('[SSEClient] Request body:', this.config.body);
+
     this.isActive = true;
+    this.buffer = '';
 
-    try {
-      const response = await fetch(this.config.url, {
-        method: this.config.method || 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'text/event-stream',
-          ...this.config.headers,
-        },
-        body: this.config.body ? JSON.stringify(this.config.body) : undefined,
-        signal: this.abortController.signal,
-      });
+    return new Promise((resolve, reject) => {
+      this.xhr = new XMLHttpRequest();
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
+      this.xhr.onreadystatechange = () => {
+        if (!this.xhr) return;
 
-      if (!response.body) {
-        throw new Error('Response body is null');
-      }
+        console.log('[SSEClient] ReadyState changed:', this.xhr.readyState);
 
-      // Read stream using native ReadableStream API
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (this.isActive) {
-        const { done, value } = await reader.read();
-
-        if (done) {
-          break;
+        // ReadyState 3 = LOADING (receiving data)
+        // ReadyState 4 = DONE (complete)
+        if (this.xhr.readyState === 3 || this.xhr.readyState === 4) {
+          this.processResponseText(this.xhr.responseText);
         }
 
-        // Decode chunk and add to buffer
-        buffer += decoder.decode(value, { stream: true });
-
-        // Process complete SSE events in buffer
-        const events = this.parseSSEBuffer(buffer);
-
-        for (const event of events) {
-          if (event === '[DONE]') {
+        if (this.xhr.readyState === 4) {
+          console.log('[SSEClient] Request complete, status:', this.xhr.status);
+          if (this.xhr.status === 200) {
             this.config.onComplete?.();
-            this.stop();
-            return;
+            resolve();
+          } else {
+            const error = new Error(`HTTP ${this.xhr.status}`);
+            this.config.onError?.(error);
+            reject(error);
           }
-
-          try {
-            const data = JSON.parse(event);
-            this.config.onMessage(data);
-          } catch (error) {
-            console.warn('Failed to parse SSE event:', event, error);
-          }
+          this.stop();
         }
+      };
 
-        // Remove processed events from buffer
-        buffer = this.getUnprocessedBuffer(buffer);
+      this.xhr.onerror = () => {
+        console.error('[SSEClient] XHR error');
+        const error = new Error('Network error');
+        this.config.onError?.(error);
+        this.stop();
+        reject(error);
+      };
+
+      this.xhr.open(this.config.method || 'POST', this.config.url);
+
+      // Set headers
+      this.xhr.setRequestHeader('Content-Type', 'application/json');
+      this.xhr.setRequestHeader('Accept', 'text/event-stream');
+      if (this.config.headers) {
+        Object.entries(this.config.headers).forEach(([key, value]) => {
+          this.xhr!.setRequestHeader(key, value);
+        });
       }
 
-      this.config.onComplete?.();
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        // Connection aborted - normal
-        return;
-      }
-
-      this.config.onError?.(error as Error);
-      throw error;
-    } finally {
-      this.isActive = false;
-    }
+      console.log('[SSEClient] Sending XHR request');
+      this.xhr.send(this.config.body ? JSON.stringify(this.config.body) : null);
+    });
   }
 
   /**
-   * Parse SSE events from buffer
-   * SSE format: "data: {json}\n\n"
+   * Process accumulated response text
    */
-  private parseSSEBuffer(buffer: string): string[] {
-    const events: string[] = [];
-    const lines = buffer.split('\n');
+  private processResponseText(responseText: string): void {
+    // Only process new text (beyond what we've already processed)
+    const newText = responseText.substring(this.buffer.length);
+    if (!newText) return;
+
+    this.buffer = responseText;
+    console.log('[SSEClient] Processing new text, length:', newText.length);
+
+    // Split into lines and process SSE events
+    const lines = newText.split('\n');
 
     for (const line of lines) {
       if (line.startsWith('data: ')) {
-        const data = line.substring(6); // Remove "data: " prefix
+        const data = line.substring(6).trim();
 
         if (data === '[DONE]') {
-          events.push('[DONE]');
-        } else if (data.trim()) {
-          events.push(data);
+          console.log('[SSEClient] [DONE] signal received');
+          continue;
+        }
+
+        if (data) {
+          try {
+            const parsed = JSON.parse(data);
+            console.log('[SSEClient] Parsed event, calling onMessage');
+            this.config.onMessage(parsed);
+          } catch (error) {
+            console.warn('[SSEClient] Failed to parse SSE data:', data.substring(0, 100));
+          }
         }
       }
     }
-
-    return events;
-  }
-
-  /**
-   * Get unprocessed buffer (incomplete events)
-   */
-  private getUnprocessedBuffer(buffer: string): string {
-    // Keep lines that don't form complete events yet
-    const lines = buffer.split('\n');
-    const lastCompleteEventIndex = buffer.lastIndexOf('\n\n');
-
-    if (lastCompleteEventIndex === -1) {
-      return buffer; // No complete events, keep entire buffer
-    }
-
-    return buffer.substring(lastCompleteEventIndex + 2);
   }
 
   /**
    * Stop SSE connection
    */
   stop(): void {
-    if (this.abortController) {
-      this.abortController.abort();
-      this.abortController = null;
+    console.log('[SSEClient] Stopping XHR connection');
+    if (this.xhr) {
+      this.xhr.abort();
+      this.xhr = null;
     }
     this.isActive = false;
   }
@@ -204,16 +188,23 @@ export function createChatCompletionStream(
     method: 'POST',
     body: {
       ...request,
-      stream: true, // Enable streaming
+      stream: true,
     },
     onMessage: (data: ChatCompletionChunk) => {
-      // Extract content from delta
+      console.log('[SSEClient] onMessage callback');
       const content = data.choices?.[0]?.delta?.content;
       if (content) {
+        console.log('[SSEClient] Content chunk:', content.substring(0, 50));
         callbacks.onChunk(content);
       }
     },
-    onComplete: callbacks.onComplete,
-    onError: callbacks.onError,
+    onComplete: () => {
+      console.log('[SSEClient] onComplete callback');
+      callbacks.onComplete?.();
+    },
+    onError: (error) => {
+      console.error('[SSEClient] onError callback:', error);
+      callbacks.onError?.(error);
+    },
   });
 }
