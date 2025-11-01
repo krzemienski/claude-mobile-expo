@@ -18,6 +18,11 @@ export type RootStackParamList = {
   Settings: undefined;
   ConversationHistory: undefined;
   
+  // New v2.0 Screens
+  Projects: undefined;
+  MCPManagement: undefined;
+  Git: undefined;
+  
   // Modal Screens
   ServerConnection: {
     isInitialSetup?: boolean;
