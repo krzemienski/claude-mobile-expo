@@ -26,6 +26,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useAppStore } from '../store/useAppStore';
+import { useWebSocket } from '../contexts/WebSocketContext';
 import { Message, MessageRole } from '../types/models';
 import { MessageBubble } from '../components/MessageBubble';
 import { StreamingIndicator } from '../components/StreamingIndicator';
@@ -42,6 +43,9 @@ export const ChatScreen: React.FC<ChatScreenProps> = () => {
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
+  // WebSocket service from context
+  const { wsService } = useWebSocket();
+
   // Zustand selectors for optimized re-renders
   const messages = useAppStore((state) => state.messages);
   const isConnected = useAppStore((state) => state.isConnected);
@@ -49,8 +53,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = () => {
   const addMessage = useAppStore((state) => state.addMessage);
   const setStreaming = useAppStore((state) => state.setStreaming);
 
-  // WebSocket service would be initialized in App.tsx and passed via context
-  // For now, mock connection status
+  // Connection status from Zustand
   const connectionStatus = isConnected ? Status.CONNECTED : Status.DISCONNECTED;
 
   // Handle input change
@@ -79,12 +82,23 @@ export const ChatScreen: React.FC<ChatScreenProps> = () => {
       timestamp: new Date(),
     };
 
+    console.log('[ChatScreen] handleSend() called, inputText:', inputText);
+    console.log('[ChatScreen] wsService:', wsService ? 'AVAILABLE' : 'NULL');
+
     addMessage(userMessage);
     setInputText('');
     setShowSlashMenu(false);
+    setStreaming(true);
 
-    // TODO: Send via WebSocket service
-    // websocketService.sendMessage(inputText);
+    // Send via WebSocket service
+    if (wsService) {
+      console.log('[ChatScreen] Calling wsService.sendMessage()...');
+      wsService.sendMessage(inputText);
+      console.log('[ChatScreen] wsService.sendMessage() returned');
+    } else {
+      console.error('[ChatScreen] WebSocket service not available');
+      setStreaming(false);
+    }
 
     // Auto-scroll to bottom
     setTimeout(() => {

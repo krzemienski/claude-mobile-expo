@@ -55,9 +55,9 @@ export class ClaudeService {
       for await (const message of query({
         prompt: userMessage,
         options: {
-          // Path to Claude CLI (SDK auto-detects at /Users/nick/.local/bin/claude)
-          // pathToClaudeCodeExecutable: '/Users/nick/.local/bin/claude',
-          
+          // CRITICAL FIX: Explicit path to Claude CLI (bypasses PATH issues)
+          pathToClaudeCodeExecutable: '/Users/nick/.local/bin/claude',
+
           // Use Claude Code system prompt
           systemPrompt: { type: 'preset', preset: 'claude_code' },
           

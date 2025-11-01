@@ -15,36 +15,13 @@ import { setupWebSocket } from './websocket/server';
 // Load environment variables
 dotenv.config();
 
-// Validate Claude Code CLI is available
-// The backend uses @anthropic-ai/claude-agent-sdk which requires Claude Code CLI
-// to be installed and authenticated on this server
-async function validateClaudeCLI(): Promise<void> {
-  try {
-    const { exec } = require('child_process');
-    const { promisify } = require('util');
-    const execAsync = promisify(exec);
-    
-    // Check if claude-code CLI is installed
-    try {
-      const { stdout } = await execAsync('claude-code --version');
-      logger.info(`✅ Claude Code CLI detected: ${stdout.trim()}`);
-    } catch (error) {
-      logger.error('❌ Claude Code CLI not found!');
-      logger.error('Please install: npm install -g claude-code');
-      logger.error('Then authenticate: claude-code login');
-      process.exit(1);
-    }
-  } catch (error: any) {
-    logger.error('Error validating Claude Code CLI:', error);
-    process.exit(1);
-  }
-}
+// CRITICAL FIX: Set PATH for Agent SDK to spawn Claude CLI
+// Agent SDK spawns child processes (claude-code CLI) that need node in PATH
+process.env.PATH = `/opt/homebrew/bin:/usr/local/bin:/Users/nick/.local/bin:${process.env.PATH}`;
+logger.info(`PATH configured for Agent SDK: ${process.env.PATH}`);
 
-// Validate CLI before starting (will be called after server setup)
-validateClaudeCLI().catch((error) => {
-  logger.error('CLI validation failed:', error);
-  process.exit(1);
-});
+// Note: Claude Agent SDK automatically detects Claude Code CLI installation
+// No manual validation needed - SDK will error if CLI unavailable
 
 // Initialize Express app
 const app: Express = express();

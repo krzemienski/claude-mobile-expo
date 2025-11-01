@@ -130,10 +130,14 @@ export class WebSocketService {
    * Send user message
    */
   sendMessage(content: string): void {
+    console.log(`[WebSocket] sendMessage() called with: "${content.substring(0, 50)}"`);
+    console.log(`[WebSocket] WebSocket state: ${this.ws?.readyState} (1=OPEN, 3=CLOSED)`);
+    console.log(`[WebSocket] About to call this.send()...`);
     this.send({
       type: 'message',
       content,
     });
+    console.log(`[WebSocket] send() completed`);
   }
 
   /**
