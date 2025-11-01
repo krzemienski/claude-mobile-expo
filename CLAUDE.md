@@ -1,745 +1,758 @@
-# Claude Code Mobile - Project Context
+# Claude Code Mobile - Project Documentation
 
-**Version**: 1.0.0  
-**Last Updated**: 2025-10-30  
-**Current Phase**: Phase 4 (Frontend Implementation)
+**Version**: 2.0.0
+**Last Updated**: 2025-10-31
+**Architecture**: Python FastAPI Backend + React Native Mobile App
+**Status**: Backend functional (Gate P1 PASSED), Frontend implementation next
 
 ---
 
 ## Project Overview
 
-Claude Code Mobile is a production-ready iOS mobile application that replicates the functionality of Claude Code CLI in a native mobile environment using React Native and Expo.
+Claude Code Mobile replicates Claude Code CLI functionality in a native iOS mobile app using React Native + Expo with a Python FastAPI backend.
 
-**Architecture**: Mobile client (React Native + Zustand) ↔ WebSocket ↔ Backend (Express + ws) ↔ Claude API
-
-**Status**:
-- ✅ Backend: 100% complete (Phase 3 done)
-- 📝 Frontend: 0% implemented (scaffold only, Phase 4 in progress)
-- ⏳ Testing: Backend ready for Gate 3A, frontend needs implementation before Gate 4A
+**Critical Achievement**: Solved Agent SDK "spawn node ENOENT" issue by migrating to Python FastAPI with subprocess.exec.
 
 ---
 
-## Technology Stack
+## Architecture
 
-### Backend (COMPLETE ✅)
-- **Runtime**: Node.js 18+
-- **Framework**: Express 4.19.2
-- **WebSocket**: ws 8.18.0
-- **Claude Integration**: @anthropic-ai/claude-agent-sdk 0.1.30
-- **Claude Code CLI**: Required on backend server (npm install -g claude-code)
-- **Logging**: Winston 3.11.0
-- **Security**: helmet 8.0.0, cors 2.8.5, express-rate-limit 7.5.0
+```
+React Native Mobile App (iOS)
+    ↓
+HTTP/SSE (OpenAI-compatible API)
+    ↓
+Python FastAPI Backend (port 8001)
+    ↓
+asyncio.create_subprocess_exec
+    ↓
+Claude Code CLI (/Users/nick/.local/bin/claude)
+    ↓
+Claude API (Anthropic)
+```
 
-**IMPORTANT**: Backend uses Claude Code CLI installation, NOT direct API calls.
-**Prerequisites**: claude-code CLI must be installed and authenticated on backend server.
+**Why Python**: Node.js Agent SDK couldn't spawn Claude CLI subprocess ("spawn node ENOENT"). Python's asyncio.create_subprocess_exec solves this completely.
 
-### Frontend (IN PROGRESS 📝)
+---
+
+## Directory Structure
+
+```
+/Users/nick/Desktop/claude-mobile-expo/
+├── backend/                    # Python FastAPI backend (1.1 MB)
+│   ├── claude_code_api/        # Python package
+│   │   ├── api/                # API endpoints (chat, models, projects, sessions)
+│   │   ├── core/               # Core logic (claude_manager, session_manager, database, config, auth)
+│   │   ├── models/             # Pydantic models (openai.py, claude.py)
+│   │   ├── utils/              # Utilities (streaming.py, parser.py)
+│   │   ├── tests/              # Test suite
+│   │   └── main.py             # FastAPI app entry
+│   ├── pyproject.toml          # Dependencies
+│   ├── Makefile                # Commands (make install, make start, make test)
+│   ├── README.md               # Backend documentation
+│   └── .gitignore              # Ignore *.db, *.log, __pycache__, etc.
+│
+├── claude-code-mobile/         # React Native + Expo app (1.4 GB)
+│   ├── src/
+│   │   ├── screens/            # 5 screens (Chat, Settings, FileBrowser, CodeViewer, Sessions)
+│   │   ├── components/         # 6 components (MessageBubble, ToolExecutionCard, etc.)
+│   │   ├── services/           # WebSocket service (TO BE REPLACED with HTTP)
+│   │   ├── store/              # Zustand state management
+│   │   ├── navigation/         # React Navigation stack
+│   │   ├── constants/          # Theme, design system
+│   │   └── types/              # TypeScript interfaces
+│   ├── App.tsx                 # App entry point
+│   ├── index.js                # React Native registration
+│   ├── package.json            # Dependencies
+│   └── app.json                # Expo configuration
+│
+├── docs/                       # Documentation (772 KB)
+│   ├── specs/                  # Original specification
+│   ├── plans/                  # Implementation plans, migration plan
+│   └── validation/             # Gate specifications
+│
+├── scripts/                    # Test and automation scripts (56 KB)
+│   ├── test-python-backend-sanity.sh       # Backend sanity check (6 tests)
+│   ├── test-python-backend-functional.sh   # Comprehensive tests (20 tests)
+│   └── [Other iOS/Metro management scripts]
+│
+├── logs/                       # Application logs
+├── package.json                # Root package.json
+└── CLAUDE.md                   # This file
+```
+
+---
+
+## Backend (Python FastAPI)
+
+### Technology Stack
+
+- **Framework**: FastAPI 0.104.0+
+- **Server**: Uvicorn with auto-reload
+- **Database**: SQLite with SQLAlchemy + aiosqlite
+- **Logging**: structlog (structured JSON logging)
+- **Auth**: Optional (disabled for testing via `require_auth=False`)
+- **Python**: 3.10+ (tested with 3.12)
+
+### Setup & Running
+
+```bash
+# Install dependencies
+cd backend
+pip3 install -e .
+
+# Start backend (development with auto-reload)
+uvicorn claude_code_api.main:app --host 0.0.0.0 --port 8001 --reload
+
+# Or use Makefile
+make install  # Install
+make start    # Start with reload
+
+# Health check
+curl http://localhost:8001/health
+```
+
+### API Endpoints (OpenAI-Compatible)
+
+**Base URL**: `http://localhost:8001`
+
+#### Core Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/health` | GET | Health check, Claude version |
+| `/` | GET | API information |
+| `/v1/models` | GET | List 4 Claude models |
+| `/v1/models/{model_id}` | GET | Get specific model info |
+| `/v1/chat/completions` | POST | Chat with streaming or non-streaming |
+| `/v1/projects` | GET/POST/DELETE | Project management |
+| `/v1/sessions` | GET/POST/DELETE | Session management |
+
+#### Chat Completions
+
+**Non-Streaming Request**:
+```json
+{
+  "model": "claude-3-5-haiku-20241022",
+  "messages": [{"role": "user", "content": "Hello"}],
+  "stream": false
+}
+```
+
+**Non-Streaming Response**:
+```json
+{
+  "id": "chatcmpl-xxx",
+  "object": "chat.completion",
+  "model": "claude-3-5-haiku-20241022",
+  "choices": [{
+    "index": 0,
+    "message": {"role": "assistant", "content": "Response text"},
+    "finish_reason": "stop"
+  }],
+  "usage": {
+    "prompt_tokens": 10,
+    "completion_tokens": 5,
+    "total_tokens": 15
+  },
+  "session_id": "uuid",
+  "project_id": "project-id"
+}
+```
+
+**SSE Streaming** (set `"stream": true` and accept `text/event-stream`):
+```
+data: {"id":"chatcmpl-xxx","choices":[{"delta":{"role":"assistant","content":""}}]}
+
+data: {"id":"chatcmpl-xxx","choices":[{"delta":{"content":"Hello"}}]}
+
+data: {"id":"chatcmpl-xxx","choices":[{"delta":{},"finish_reason":"stop"}]}
+
+data: [DONE]
+
+```
+
+### Claude CLI Integration
+
+**How It Works**:
+```python
+# backend/claude_code_api/core/claude_manager.py:68-76
+cmd = ["/Users/nick/.local/bin/claude", "-p", prompt]
+cmd.extend(["--output-format", "stream-json", "--dangerously-skip-permissions"])
+
+process = await asyncio.create_subprocess_exec(
+    *cmd,
+    cwd=src_dir,  # Runs from Python package directory
+    stdout=asyncio.subprocess.PIPE,
+    stderr=asyncio.subprocess.PIPE
+)
+
+stdout, stderr = await process.communicate()  # Wait for completion
+```
+
+**Claude CLI Output** (JSONL - one JSON per line):
+```json
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Hello!"}]}}
+{"type":"result","usage":{"input_tokens":10,"output_tokens":5},"cost_usd":0.001}
+```
+
+**Conversion Flow**:
+```
+Claude JSONL → parser.py → streaming.py → OpenAI format → SSE/JSON response
+```
+
+### Database Schema (SQLite)
+
+**File**: `backend/claude_api.db` (auto-created on startup)
+
+**Tables**:
+- `projects`: Project definitions (id, name, path, created_at)
+- `sessions`: Active sessions (id, project_id, model, tokens, cost)
+- `messages`: Conversation history (id, session_id, role, content, tokens)
+- `api_keys`: Authentication (id, key_hash, usage stats)
+
+**Queries**:
+```bash
+sqlite3 backend/claude_api.db ".tables"
+sqlite3 backend/claude_api.db "SELECT * FROM sessions;"
+```
+
+### Available Models (4 Total)
+
+| Model ID | Name | Cost (Input/Output per 1k) |
+|----------|------|---------------------------|
+| `claude-opus-4-20250514` | Opus 4 | $15.00 / $75.00 |
+| `claude-sonnet-4-20250514` | Sonnet 4 | $3.00 / $15.00 |
+| `claude-3-7-sonnet-20250219` | Sonnet 3.7 | $3.00 / $15.00 |
+| `claude-3-5-haiku-20241022` | Haiku 3.5 (default) | $0.25 / $1.25 |
+
+### Testing
+
+**Sanity Check** (6 tests):
+```bash
+./scripts/test-python-backend-sanity.sh
+# Tests: health, models, chat, streaming, OpenAI compatibility
+# Pass: Exit code 0
+```
+
+**Comprehensive Tests** (20 tests):
+```bash
+./scripts/test-python-backend-functional.sh
+# Tests: All endpoints, tool execution, database, sessions
+```
+
+### Configuration
+
+**Environment Variables** (optional, has defaults):
+```bash
+# .env file (optional)
+CLAUDE_BINARY_PATH=/Users/nick/.local/bin/claude  # Auto-detected
+DATABASE_URL=sqlite:///./claude_api.db
+PORT=8001
+REQUIRE_AUTH=false  # Disable auth for testing
+PROJECT_ROOT=/tmp/claude_projects
+```
+
+**Defaults** (from `claude_code_api/core/config.py`):
+- Auto-detects Claude CLI path
+- No authentication required (test mode)
+- Port 8001 (Docker using 8000)
+- CORS: All origins allowed
+
+---
+
+## Frontend (React Native + Expo)
+
+### Technology Stack
+
 - **Framework**: React Native 0.81.5
-- **Build Tool**: Expo ~54.0.20
-- **Navigation**: React Navigation 7.1.8 (MUST implement Stack Navigator)
-- **State**: Zustand (MUST ADD)
-- **Storage**: AsyncStorage (MUST ADD)
-- **WebSocket**: Native WebSocket API
+- **Build Tool**: Expo SDK 54
+- **Navigation**: React Navigation 7.1.8 (Stack Navigator)
+- **State**: Zustand (with AsyncStorage persistence)
+- **WebSocket**: Currently implemented (TO BE REPLACED with HTTP/SSE)
 - **Animations**: Reanimated 4.1.1
-- **Testing**: expo-mcp 0.1.15 (already installed)
+- **Testing**: expo-mcp 0.1.15
+
+### Current Status
+
+**Implemented** (~4,000 lines):
+- ✅ All 5 screens (Chat, Settings, FileBrowser, CodeViewer, Sessions)
+- ✅ All 6 components (MessageBubble, ToolExecutionCard, etc.)
+- ✅ Zustand store with AsyncStorage
+- ✅ WebSocket service (Rocket.Chat reconnection patterns)
+- ✅ Design system (purple gradient, teal primary)
+- ✅ Stack navigation
+- ✅ TypeScript types
+
+**Needs Migration** (Phase 3-4):
+- ❌ Replace WebSocket with HTTP/SSE service
+- ❌ Install react-native-sse package
+- ❌ Update Zustand store for HTTP
+- ❌ Update all screens to use HTTP service
+- ❌ Remove old WebSocket code
+
+### Setup & Running
+
+```bash
+# Install dependencies
+cd claude-code-mobile
+npm install
+
+# Start Metro bundler
+npx expo start --clear
+
+# Build and run on iOS
+npx expo run:ios
+
+# Specific device
+npx expo run:ios --device "iPhone 16"
+```
+
+### App Structure
+
+**Screens** (src/screens/):
+- `ChatScreen.tsx`: Primary interface, message list, input, send button
+- `SettingsScreen.tsx`: Server configuration, preferences
+- `FileBrowserScreen.tsx`: File/directory navigation
+- `CodeViewerScreen.tsx`: Syntax highlighted code display
+- `SessionsScreen.tsx`: Session management (list, switch, delete)
+
+**Components** (src/components/):
+- `MessageBubble.tsx`: User/assistant message display
+- `ToolExecutionCard.tsx`: Tool execution with expand/collapse
+- `StreamingIndicator.tsx`: Animated typing indicator
+- `SlashCommandMenu.tsx`: Command list with filter
+- `ConnectionStatus.tsx`: Connection status indicator
+- `FileItem.tsx`: File/directory item display
+
+**State Management** (src/store/):
+- `useAppStore.ts`: Zustand store with AsyncStorage persistence
+- Current: WebSocket-based
+- Migration: Will use HTTP/SSE
+
+**Services** (src/services/):
+- `websocket.service.ts`: Current WebSocket client (TO BE REPLACED)
+- Future: `http/` directory with SSE streaming client
+
+### Design System
+
+**Colors**:
+- Background: Purple gradient (#0f0c29 → #302b63 → #24243e)
+- Primary: Teal (#4ecdc4)
+- Text: Off-white (#ecf0f1)
+
+**Typography**:
+- Primary: System font (San Francisco on iOS)
+- Mono: Menlo (code display)
+- Sizes: 10px - 32px
+
+**Spacing**: 8-point grid (2px - 48px)
 
 ---
 
-## Current Implementation Status
+## Testing Strategy
 
-### Backend Implementation (Phase 3 - COMPLETE, Restructured for CLI)
+### Backend Testing (NO MOCKS)
 
-**Files Implemented** (8 total in `backend/src/`):
-1. ✅ `index.ts` - Express server, WebSocket upgrade, security, health checks, CLI validation
-2. ✅ `utils/logger.ts` - Winston logger with file transports
-3. ✅ `middleware/errorHandler.ts` - AppError class, error middleware
-4. ✅ `middleware/rateLimiter.ts` - Rate limiting (HTTP + WebSocket)
-5. ✅ `websocket/server.ts` - WebSocket server, heartbeat, perMessageDeflate
-6. ✅ `websocket/sessionManager.ts` - Session CRUD, file persistence
-7. ✅ `websocket/messageHandler.ts` - Message routing (simplified)
-8. ✅ `services/claude.service.ts` - Agent SDK integration (uses Claude Code CLI)
+**Method**: Functional testing with REAL operations
 
-**Architecture**: Uses Claude Agent SDK → Claude Code CLI → Claude API
-**No API Key Needed**: Backend uses CLI's authentication
-
-**Backend Features**:
-- All Claude Code CLI tools automatically available (Read, Write, Bash, Grep, Glob, Edit, etc.)
-- All Claude Code CLI slash commands (/help, /cost, /clear, /compact, /mcp, /config)
-- WebSocket protocol: init_session, message, content_delta, tool_execution, tool_result, message_complete
-- Security: Handled by Claude Code CLI (path validation, command blocking, etc.)
-- Streaming: Real-time responses via Agent SDK AsyncGenerator
-- Cost tracking: Automatic via SDK (total_cost_usd provided)
-- Session persistence: File-based JSON storage in `data/sessions/` (mobile sessions)
-
-**Prerequisites** (Backend Server):
-- Claude Code CLI installed: `npm install -g claude-code`
-- CLI authenticated: `claude-code login`
-- Node.js 18+
-
-**Backend is production-ready and awaiting frontend integration.**
-
-### Frontend Implementation (Phase 4 - 0% COMPLETE)
-
-**Current State**:
-- Expo scaffold with file-based routing (app/ directory)
-- Tab navigation (Home/Explore) - DOES NOT match spec
-- Basic theme with light/dark mode - DOES NOT match spec
-- No screens, components, or services from specification
-
-**Required Implementation** (~6,000-7,000 lines):
-
-**Must Replace**:
-- ❌ Tab navigation → ✅ Stack navigation (React Navigation)
-- ❌ app/ directory structure → ✅ src/ directory structure
-- ❌ Light/dark theme → ✅ Spec design system (purple gradient + teal)
-
-**Must Add Packages** (via expo-mcp):
-```
-"Add zustand and show me how to set up a store with AsyncStorage persistence"
-"Add @react-native-async-storage/async-storage"
-"Add react-native-syntax-highlighter for code display"
-"Add react-native-markdown-display for message rendering"
+**Sanity Check**:
+```bash
+./scripts/test-python-backend-sanity.sh
 ```
 
-**Must Implement**:
-1. **Theme System** (`src/constants/theme.ts`)
-   - Colors: Purple gradient background (#0f0c29→#302b63→#24243e), teal primary (#4ecdc4)
-   - Typography: System font, Menlo mono, 10-32px sizes
-   - Spacing: 8-point grid (2-48px)
-   - Shadows: 4 elevation levels
+**Tests**:
+1. Health endpoint
+2. Claude CLI availability
+3. Models API (4 models)
+4. Non-streaming chat completion
+5. SSE streaming format
+6. OpenAI compatibility
 
-2. **Type Definitions** (3 files)
-   - `src/types/models.ts` - Message, Session, User, ToolExecution
-   - `src/types/websocket.ts` - WebSocket message types
-   - `src/types/navigation.ts` - RootStackParamList
+**All tests use real curl, real Claude API calls, real database writes**
 
-3. **WebSocket Service** (`src/services/websocket.service.ts`)
-   - Connect to ws://localhost:3001/ws
-   - Auto-reconnect with exponential backoff (Rocket.Chat pattern: 1s→2s→4s→8s→16s→30s max)
-   - Handle all message types from backend
-   - Offline message queue
-   - Heartbeat ping/pong
+### Frontend Testing (expo-mcp + xc-mcp)
 
-4. **Zustand Store** (`src/store/useAppStore.ts`)
-   - Complete AppState from spec (currentSession, messages, isConnected, settings, etc.)
-   - AsyncStorage persistence with partialize (persist settings, don't persist messages)
-   - All actions (setCurrentSession, addMessage, updateMessage, etc.)
+**Method**: Visual autonomous testing
 
-5. **Core Components** (6 total)
-   - `MessageBubble.tsx` - User/assistant message display (Gifted Chat pattern)
-   - `ToolExecutionCard.tsx` - Tool execution display with expand/collapse
-   - `StreamingIndicator.tsx` - Animated typing dots (Reanimated)
-   - `SlashCommandMenu.tsx` - Command list, filter, slide animation
-   - `ConnectionStatus.tsx` - Green/orange/red dot with text
-   - `FileItem.tsx` - File/directory display with icon
+**Tools**:
+- expo-mcp: React Native level testing (screenshots, testID tapping)
+- xc-mcp: iOS simulator management (boot, install, launch)
+- IDB CLI: UI automation (tap coordinates, accessibility tree)
 
-6. **Screens** (5 total)
-   - `ChatScreen.tsx` - Primary interface, FlatList messages, input, slash menu (500-700 lines)
-   - `FileBrowserScreen.tsx` - File/directory browsing, search
-   - `CodeViewerScreen.tsx` - Syntax highlighted code display
-   - `SettingsScreen.tsx` - Server config, preferences, cost display
-   - `SessionsScreen.tsx` - Session list, switch, delete
+**Pattern**:
+```
+1. Take screenshot
+2. AI analyzes visually
+3. AI fixes if wrong
+4. AI retests
+5. Loop until perfect
+```
 
-7. **Navigation** (`src/navigation/AppNavigator.tsx`)
-   - React Navigation Stack Navigator
-   - Type-safe with RootStackParamList
-
-8. **App Entry** (`App.tsx`)
-   - NavigationContainer, Zustand provider, error boundary
+**No manual verification required** - AI determines pass/fail autonomously
 
 ---
 
-## Architecture Details
+## Validation Gates
 
-### Backend Architecture (Implemented)
+### Gate P1: Python Backend Functional ✅ PASSED
 
-```
-Express HTTP Server (port 3001)
-├─ WebSocket Upgrade (/ws endpoint)
-│  ├─ SessionManager (file-based sessions)
-│  ├─ MessageHandler (10 message types)
-│  └─ Heartbeat (30s ping/pong)
-│
-├─ Claude Service
-│  ├─ Anthropic SDK streaming
-│  ├─ Tool execution (10 tools)
-│  └─ Agentic continuation loop
-│
-├─ Services
-│  ├─ FileService (CRUD with path sanitization)
-│  ├─ GitService (simple-git wrapper)
-│  ├─ CommandService (20+ slash commands)
-│  └─ ToolExecutor (security, validation, execution)
-│
-└─ Middleware
-   ├─ Security (helmet, CORS)
-   ├─ Rate limiting (100 req/15min)
-   ├─ Error handling (AppError, 404, async)
-   └─ Logging (Winston)
-```
+**Status**: PASSED (2025-10-31)
+**Tests**: 6/6 passed
+**Evidence**:
+- Backend starts on port 8001 ✅
+- Claude CLI integration working ✅
+- Chat completions functional ✅
+- SSE streaming correct ✅
+- Database persisting ✅
 
-### Frontend Architecture (To Implement)
+### Gate F1: Frontend HTTP Service (Next)
 
-```
-React Native App
-├─ Navigation (Stack Navigator)
-│  ├─ ChatScreen (primary)
-│  ├─ FileBrowserScreen
-│  ├─ CodeViewerScreen
-│  ├─ SettingsScreen
-│  └─ SessionsScreen
-│
-├─ State (Zustand)
-│  ├─ currentSession, sessions
-│  ├─ messages (Message[])
-│  ├─ isConnected, isStreaming
-│  ├─ settings (serverUrl, apiKey, etc.)
-│  └─ Persistence (AsyncStorage)
-│
-├─ Services
-│  └─ WebSocketService
-│     ├─ Connect/disconnect
-│     ├─ Auto-reconnect (exponential backoff)
-│     ├─ Message send/receive
-│     ├─ Offline queue
-│     └─ Event callbacks
-│
-└─ Components
-   ├─ MessageBubble (user/assistant styling)
-   ├─ ToolExecutionCard (expand/collapse)
-   ├─ StreamingIndicator (animated dots)
-   ├─ SlashCommandMenu (filtered list)
-   ├─ ConnectionStatus (status dot)
-   └─ FileItem (file/directory display)
-```
+**Requirements**:
+- Install react-native-sse
+- Create HTTP service layer
+- Test SSE client in isolation
+- Verify OpenAI request/response handling
 
----
+### Gate F2: Frontend Migration
 
-## Coding Standards
+**Requirements**:
+- Update Zustand store for HTTP
+- Update all screens
+- Remove WebSocket code
+- App builds and runs
 
-### TypeScript
-- **Strict mode**: Enabled
-- **Interfaces**: Use for props, state, and data models
-- **Type safety**: No `any` types without justification
-- **Exports**: Named exports for components, default for screens
+### Gate I1: Integration Testing
 
-### React Native Best Practices
-- **Components**: Functional components with hooks
-- **Performance**: Use React.memo for expensive components
-- **Lists**: FlatList with virtualization config (windowSize=10, maxToRenderPerBatch=10, removeClippedSubviews=true)
-- **Callbacks**: Wrap event handlers in useCallback
-- **Computations**: Wrap expensive operations in useMemo
-- **Animations**: Use Reanimated (NOT Animated API)
+**Requirements**:
+- Complete environment running
+- End-to-end message flow
+- All screens functional
+- Screenshot validation
 
-### Zustand Patterns
-- **Store structure**: Separate state properties and actions
-- **Persistence**: Use createJSONStorage(() => AsyncStorage)
-- **Partialize**: Persist settings only, not messages (too large)
-- **Selectors**: Use selective subscriptions to prevent unnecessary re-renders
-- **TypeScript**: Define state/actions types separately, combine in store type
+### Gate 4A: Production Ready
 
-### WebSocket Patterns (from Rocket.Chat)
-- **Reconnection**: Exponential backoff 1s→2s→4s→8s→16s→30s (max)
-- **Heartbeat**: Ping every 30s, pong response required
-- **Offline queue**: Store messages when disconnected, send on reconnect
-- **Status tracking**: Update isConnected state reactively
-
-### Testing Patterns
-- **testID**: Add to ALL interactive elements for expo-mcp automation
-- **Autonomous testing**: Use expo-mcp prompts for visual validation
-- **NO MOCKS**: Functional testing only (real WebSocket, real files, real git)
-- **Visual verification**: AI analyzes screenshots to determine pass/fail
-
----
-
-## MCP Tools Integration
-
-### expo-mcp (PRIMARY for Frontend)
-
-**Package Installation** (ALWAYS use this, NEVER npm install):
-```
-"Add zustand and show me how to set up a store"
-"Add react-native-syntax-highlighter for code display"
-```
-
-**Documentation Search**:
-```
-"Search Expo docs for navigation patterns"
-"Search Expo docs for AsyncStorage persistence"
-```
-
-**Autonomous Testing** (requires Metro with EXPO_UNSTABLE_MCP_SERVER=1):
-```
-"Take screenshot of Chat screen and verify purple gradient background"
-"Find view with testID 'message-input' and verify it's accessible"
-"Tap button with testID 'send-button'"
-"Take screenshot showing message sent"
-```
-
-### xc-mcp (For iOS Simulator Management)
-
-**Simulator Operations**:
-- `simctl-boot`: Boot iPhone simulator
-- `simctl-install`: Install .app bundle
-- `simctl-launch`: Launch installed app
-- `idb-ui-tap`: Tap coordinates (when testID not available)
-- `idb-ui-describe`: Get accessibility tree
-
-### Serena MCP (For File Operations)
-
-**ALL file operations use Serena** (NOT bash cat/echo):
-- `create_text_file`: Create new files
-- `read_file`: Read file contents
-- `replace_regex`: Edit code with regex
-- `find_symbol`: Find code symbols
-- `write_memory`: Save project knowledge
-
-### Git MCP (For Version Control)
-
-**ALL git operations use Git MCP** (NOT bash git):
-- `git_add`: Stage files
-- `git_commit`: Create commits
-- `git_status`: Check status
-- `git_log`: View history
-
----
-
-## Design System (From Specification)
-
-### Colors
-
-**Background**:
-```typescript
-backgroundGradient: {
-  start: '#0f0c29',    // Deep purple-blue
-  middle: '#302b63',   // Medium purple
-  end: '#24243e',      // Dark purple-gray
-}
-```
-
-**Primary Actions**:
-```typescript
-primary: '#4ecdc4',        // Teal (buttons, links, highlights)
-primaryDark: '#3db0a8',    // Hover states
-primaryLight: '#6de3db',   // Disabled states
-```
-
-**Text**:
-```typescript
-textPrimary: '#ecf0f1',    // Off-white (primary text)
-textSecondary: '#7f8c8d',  // Gray (secondary text)
-textDark: '#0f0c29',       // Dark (on light backgrounds)
-```
-
-**Status**:
-```typescript
-success: '#2ecc71',        // Green
-warning: '#f39c12',        // Orange
-error: '#e74c3c',          // Red
-```
-
-### Typography
-
-```typescript
-fontFamily: {
-  primary: 'System',     // San Francisco on iOS
-  mono: 'Menlo',         // Code display
-}
-
-fontSize: {
-  xs: 10,    sm: 12,    base: 14,   md: 16,
-  lg: 18,    xl: 20,    xxl: 24,    xxxl: 32,
-}
-
-fontWeight: {
-  light: '300',    regular: '400',   medium: '500',
-  semibold: '600', bold: '700',
-}
-```
-
-### Spacing (8-Point Grid)
-
-```typescript
-spacing: {
-  xxs: 2,    xs: 4,     sm: 8,      md: 12,
-  base: 16,  lg: 20,    xl: 24,     xxl: 32,    xxxl: 48,
-}
-```
-
----
-
-## WebSocket Protocol
-
-### Client → Server Messages
-
-```typescript
-// Initialize or resume session
-{type: 'init_session', sessionId?: string, projectPath?: string}
-
-// Send user message
-{type: 'message', content: string}
-
-// Session management
-{type: 'list_sessions'}
-{type: 'get_session', sessionId: string}
-{type: 'delete_session', sessionId: string}
-```
-
-### Server → Client Messages
-
-```typescript
-// Session initialized
-{type: 'session_initialized', sessionId: string, hasContext: boolean}
-
-// Streaming text response
-{type: 'content_delta', delta: string}
-
-// Tool execution started
-{type: 'tool_execution', tool: string, input: any}
-
-// Tool execution result
-{type: 'tool_result', tool: string, result: string}
-
-// Message complete
-{type: 'message_complete', tokensUsed: {input: number, output: number}}
-
-// Slash command response
-{type: 'slash_command_response', content: string}
-
-// Errors
-{type: 'error', error: string}
-```
-
----
-
-## Production Patterns
-
-### Message UI (from react-native-gifted-chat)
-- Inverted FlatList for chat behavior (newest at bottom)
-- User messages: Right-aligned, teal background
-- Assistant messages: Left-aligned, transparent background
-- Timestamp display below bubbles
-- Long press context menu (copy, retry, delete)
-
-### WebSocket Reconnection (from Rocket.Chat)
-- Detect disconnect immediately
-- Exponential backoff: 1s, 2s, 4s, 8s, 16s, 30s (max)
-- Heartbeat ping every 30s, timeout if no pong
-- Connection status callbacks
-- Offline message queue
-
-### Optimistic UI (from stream-chat-react-native)
-- Show user message immediately (before server confirm)
-- Show "sending..." state
-- Update on server confirmation
-- Retry on failure
-- Perceived instant response
-
----
-
-## Skills to Use
-
-### For Frontend Implementation
-- `@react-native-expo-development` - RN best practices, expo-mcp integration, production patterns
-- `@anthropic-streaming-patterns` - Claude API integration (when adding features)
-- `@claude-mobile-ios-testing` - iOS simulator testing with expo-mcp autonomous validation
-
-### For Testing
-- `@claude-mobile-validation-gate` - Automated gate execution (Gates 3A, 4A, 6A-E)
-- `@websocket-integration-testing` - Backend WebSocket testing (Gate 3A)
-- `@claude-mobile-metro-manager` - Metro bundler lifecycle
-
-### For Quality
-- `@test-driven-development` - Write tests first (adapted for mobile)
-- `@testing-anti-patterns` - NO MOCKS principle
-- `@systematic-debugging` - When issues occur
-- `@production-readiness-audit` - Before deployment (Phase 7)
+**Requirements**:
+- All features working
+- Performance acceptable
+- No crashes
+- Complete testing
 
 ---
 
 ## Common Commands
 
 ### Backend
+
 ```bash
-# Prerequisites: Install and authenticate Claude Code CLI
-npm install -g claude-code
-claude-code login
-
-# Backend setup
+# Start backend
 cd backend
-npm install          # Install dependencies (includes Agent SDK)
-npm run build        # Compile TypeScript
-npm start            # Start server (port 3001)
-npm run dev          # Development with auto-reload
+uvicorn claude_code_api.main:app --host 0.0.0.0 --port 8001 --reload
 
-# Environment setup
-cp .env.example .env
-# No API key needed - uses Claude Code CLI authentication
+# Or use Makefile
+make start
+
+# Run tests
+./scripts/test-python-backend-sanity.sh
+
+# Check health
+curl http://localhost:8001/health
+
+# List models
+curl http://localhost:8001/v1/models
+
+# Chat completion
+curl -X POST http://localhost:8001/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"claude-3-5-haiku-20241022","messages":[{"role":"user","content":"Hello"}],"stream":false}'
 ```
 
 ### Frontend
+
 ```bash
+# Install dependencies
 cd claude-code-mobile
-npm install                      # Install dependencies
-npx expo start                   # Start Metro (dev)
-EXPO_UNSTABLE_MCP_SERVER=1 npx expo start  # Metro with expo-mcp
+npm install
 
-npx expo run:ios                 # Build and run on iOS
-npx expo run:ios --device "iPhone 14"     # Specific device
+# Start Metro
+npx expo start --clear
+
+# Build iOS
+npx expo run:ios
+
+# With MCP server (for testing)
+EXPO_UNSTABLE_MCP_SERVER=1 npx expo start
 ```
 
-### Testing
+### Database
+
 ```bash
-# Backend functional testing
-./scripts/test-websocket.sh ws://localhost:3001/ws /tmp/test-project
-./scripts/validate-gate-3a.sh
+# View sessions
+sqlite3 backend/claude_api.db "SELECT id, model, total_tokens FROM sessions;"
 
-# Frontend visual testing (after implementation)
-./scripts/build-ios.sh "iPhone 14"
-./scripts/capture-screenshots.sh "iPhone 14" "gate-4a"
-./scripts/validate-gate-4a.sh "iPhone 14"
+# View messages
+sqlite3 backend/claude_api.db "SELECT role, content FROM messages LIMIT 5;"
 
-# Integration environment
-./scripts/start-integration-env.sh "iPhone 14"
-./scripts/stop-integration-env.sh
+# List tables
+sqlite3 backend/claude_api.db ".tables"
 ```
 
 ---
 
-## File Organization
+## Skills
 
-### Backend Structure
+### Backend Testing
+
+**python-fastapi-claude-backend-testing**:
+- Complete OpenAI API spec
+- SSE format specification
+- curl test patterns
+- Verification methods
+
+**Location**: `~/.claude/skills/python-fastapi-claude-backend-testing/SKILL.md`
+
+**Usage**: Reference when testing backend, writing API clients, debugging SSE
+
+### Other Skills
+
+- `systematic-debugging`: 4-phase debugging framework
+- `test-driven-development`: RED-GREEN-REFACTOR for code
+- `writing-skills`: TDD for documentation
+- `executing-plans`: Batch execution with review gates
+
+---
+
+## Prerequisites
+
+### Backend Prerequisites
+
+1. **Python 3.10+**: `python3 --version`
+2. **Claude CLI**: `/Users/nick/.local/bin/claude --version`
+3. **Claude Authenticated**: `claude config list | grep api_key`
+4. **pip**: For installing dependencies
+
+### Frontend Prerequisites
+
+1. **Node.js 18+**: `node --version`
+2. **npm**: `npm --version`
+3. **Expo CLI**: `npx expo --version`
+4. **Xcode**: For iOS builds
+5. **iOS Simulator**: For testing
+
+---
+
+## Migration History
+
+### Original Architecture (Node.js - FAILED)
+
 ```
-backend/
-├── src/
-│   ├── index.ts                    # Server entry point
-│   ├── middleware/                 # Express middleware
-│   │   ├── errorHandler.ts
-│   │   └── rateLimiter.ts
-│   ├── websocket/                  # WebSocket layer
-│   │   ├── server.ts
-│   │   ├── sessionManager.ts
-│   │   └── messageHandler.ts
-│   ├── services/                   # Business logic
-│   │   ├── claude.service.ts
-│   │   ├── toolExecutor.ts
-│   │   ├── file.service.ts
-│   │   ├── git.service.ts
-│   │   └── command.service.ts
-│   └── utils/                      # Utilities
-│       └── logger.ts
-├── data/sessions/                  # Session persistence
-├── logs/                           # Application logs
-└── package.json
+Mobile → WebSocket → Node.js Express → Agent SDK → Claude CLI
+                                          ❌ spawn node ENOENT
 ```
 
-### Frontend Structure (To Implement)
+**Problem**: Agent SDK couldn't spawn Claude CLI subprocess
+**Attempts**: 4+ fixes (PATH, env vars, explicit paths)
+**Result**: All failed, 410k tokens consumed
+
+### New Architecture (Python - SUCCESS)
+
 ```
-claude-code-mobile/
-├── src/
-│   ├── screens/                    # Screen components
-│   │   ├── ChatScreen.tsx
-│   │   ├── FileBrowserScreen.tsx
-│   │   ├── CodeViewerScreen.tsx
-│   │   ├── SettingsScreen.tsx
-│   │   └── SessionsScreen.tsx
-│   ├── components/                 # Reusable components
-│   │   ├── MessageBubble.tsx
-│   │   ├── ToolExecutionCard.tsx
-│   │   ├── StreamingIndicator.tsx
-│   │   ├── SlashCommandMenu.tsx
-│   │   ├── ConnectionStatus.tsx
-│   │   └── FileItem.tsx
-│   ├── services/                   # Services
-│   │   └── websocket.service.ts
-│   ├── store/                      # State management
-│   │   └── useAppStore.ts
-│   ├── navigation/                 # Navigation
-│   │   └── AppNavigator.tsx
-│   ├── constants/                  # Constants
-│   │   └── theme.ts
-│   ├── types/                      # TypeScript types
-│   │   ├── models.ts
-│   │   ├── websocket.ts
-│   │   └── navigation.ts
-│   └── utils/                      # Utilities
-├── App.tsx                         # App entry
-└── package.json
+Mobile → HTTP/SSE → Python FastAPI → subprocess.exec → Claude CLI
+                                          ✅ WORKING
+```
+
+**Solution**: Python's asyncio.create_subprocess_exec
+**Result**: Claude CLI spawns successfully
+**Validation**: Gate P1 PASSED (6/6 tests)
+
+---
+
+## Current Phase: Frontend Migration
+
+### Next Steps
+
+1. **Phase 3: Frontend HTTP Service**
+   - Install react-native-sse via expo-mcp
+   - Create `src/services/http/` directory
+   - Implement SSE streaming client
+   - Test HTTP service in isolation
+   - **Gate F1**: HTTP service functional
+
+2. **Phase 4: Frontend Migration**
+   - Update `src/store/useAppStore.ts` (HTTP instead of WebSocket)
+   - Update all 5 screens to use HTTP service
+   - Remove `src/services/websocket.service.ts`
+   - Remove WebSocket context
+   - Build and verify compilation
+   - **Gate F2**: Frontend migrated
+
+3. **Phase 5: Integration Testing**
+   - Start complete environment (Python + Metro + iOS)
+   - Test end-to-end message flow
+   - Test all screens with IDB automation
+   - Screenshot validation
+   - **Gate I1**: Integration validated
+
+4. **Phase 6-8: Skills, Testing, Documentation**
+   - Create testing skills
+   - Comprehensive validation
+   - **Gate 4A**: Production ready
+
+---
+
+## Key Files Reference
+
+### Backend Critical Files
+
+- `backend/claude_code_api/core/claude_manager.py`: Claude CLI subprocess management
+- `backend/claude_code_api/api/chat.py`: Chat completions endpoint
+- `backend/claude_code_api/utils/streaming.py`: SSE formatting (FIXED: removed max_chunks limit)
+- `backend/claude_code_api/models/openai.py`: Request/response schemas
+- `backend/claude_code_api/core/database.py`: SQLAlchemy models
+
+### Frontend Critical Files
+
+- `claude-code-mobile/App.tsx`: App entry, WebSocket initialization
+- `claude-code-mobile/src/store/useAppStore.ts`: Zustand store
+- `claude-code-mobile/src/services/websocket.service.ts`: WebSocket client (TO REPLACE)
+- `claude-code-mobile/src/screens/ChatScreen.tsx`: Primary UI (500+ lines)
+- `claude-code-mobile/src/constants/theme.ts`: Design system
+
+### Documentation
+
+- `docs/specs/claude-code-expo-v1.md`: Original specification (2,885 lines)
+- `docs/plans/2025-10-31-python-fastapi-migration-plan.md`: Migration plan (247 tasks)
+- `docs/SESSION-RESUME-PROTOCOL.md`: Context restoration guide
+
+### Scripts
+
+- `scripts/test-python-backend-sanity.sh`: Quick backend validation (6 tests)
+- `scripts/test-python-backend-functional.sh`: Comprehensive tests (20 tests)
+
+---
+
+## Troubleshooting
+
+### Backend Won't Start
+
+```bash
+# Check Python version
+python3 --version  # Need 3.10+
+
+# Check Claude CLI
+/Users/nick/.local/bin/claude --version
+
+# Check port availability
+lsof -i:8001
+
+# View logs (if started in background)
+tail -f logs/python-backend-8001.log
+```
+
+### Backend Tests Failing
+
+```bash
+# Check backend is running
+curl http://localhost:8001/health
+
+# Check Claude CLI authenticated
+claude config list | grep api_key
+
+# Run sanity check with output
+./scripts/test-python-backend-sanity.sh | tee /tmp/test-output.txt
+```
+
+### Frontend Build Errors
+
+```bash
+# Clean and rebuild
+cd claude-code-mobile
+rm -rf node_modules
+npm install
+npx expo start --clear
 ```
 
 ---
 
-## Testing Strategy
+## Performance
 
-### Backend Testing (Gate 3A)
-**Method**: Functional testing with real operations
-- ✅ curl for HTTP endpoints
-- ✅ wscat for WebSocket protocol
-- ✅ Actual file operations (create files, verify on disk)
-- ✅ Real git operations (commit, check git log)
-- ❌ NO unit tests with mocks
-- ❌ NO mocked WebSocket or file system
+**Backend**:
+- Request latency: < 100ms (excluding Claude API)
+- Claude CLI spawn: 5-10 seconds
+- SSE streaming: Real-time chunks
+- Database: SQLite (sufficient for mobile backend)
 
-**Automation**: `./scripts/validate-gate-3a.sh`
-
-**Pass Criteria**: All 14 tests pass, exit code 0
-
-### Frontend Testing (Gate 4A)
-**Method**: expo-mcp autonomous visual testing
-- ✅ expo-mcp automation_take_screenshot for visual capture
-- ✅ expo-mcp automation_tap_by_testid for interactions
-- ✅ expo-mcp automation_find_view_by_testid for verification
-- ✅ AI visual analysis of screenshots
-- ✅ AI determines pass/fail autonomously
-- ❌ NO manual visual inspection required
-
-**Automation**: expo-mcp prompts + AI verification
-
-**Pass Criteria**: All screens render correctly, all interactions work, AI validates visually
-
-### Integration Testing (Gates 6A-E)
-**Method**: expo-mcp visual verification of complete workflows
-- Gate 6A: Connection status verification
-- Gate 6B: Message flow (send message, see response)
-- Gate 6C: Tool execution (create file, verify in FileBrowser)
-- Gate 6D: File browser navigation
-- Gate 6E: Session management (create, switch, delete)
-
----
-
-## Implementation Workflow
-
-### For Each Frontend Component/Screen
-
-1. **Design** (if complex): Use `@brainstorming` skill
-2. **Implement**: Create via Serena `mcp__serena__create_text_file`
-3. **Add testIDs**: All interactive elements
-4. **Test with expo-mcp**:
-   ```
-   "Take screenshot of [Screen] and verify [expected UI]"
-   "Find view with testID '[element-id]'"
-   "Tap button with testID '[button-id]'"
-   "Verify [expected outcome]"
-   ```
-5. **AI validates**: Visual analysis of screenshots
-6. **Fix if needed**: Edit and re-test
-7. **Commit via Git MCP**: When tests pass
-
-### Autonomous Testing Example
-
-```
-Step 1: Implement ChatScreen with testIDs
-Step 2: "Take screenshot of Chat screen empty state"
-Step 3: AI analyzes: ✅ Purple gradient, ✅ Input field, ✅ Send button
-Step 4: "Find view with testID 'message-input'"
-Step 5: expo-mcp returns: Found, accessible, enabled
-Step 6: "Tap view with testID 'message-input'"
-Step 7: "Take screenshot and verify keyboard appeared"
-Step 8: AI analyzes: ✅ Keyboard visible
-Step 9: Test passes → Commit via Git MCP
-```
-
----
-
-## Performance Requirements
-
-- **WebSocket latency**: < 100ms (backend handles)
-- **UI rendering**: 60 FPS smooth scrolling
-- **App launch**: < 2s cold start  
-- **Memory**: < 100MB average
-- **Battery**: < 5%/hour
-
-**Optimization Checklist**:
-- ✅ React.memo on MessageBubble, ToolExecutionCard
-- ✅ useCallback for renderItem, event handlers
-- ✅ useMemo for expensive computations
-- ✅ FlatList virtualization config
-- ✅ Reanimated for animations
-- ✅ Hermes JS engine enabled
+**Frontend**:
+- Target: 60 FPS UI
+- Launch: < 2s cold start
+- Memory: < 100MB average
 
 ---
 
 ## Security Notes
 
-### Backend (Implemented)
-- ✅ Path sanitization (prevents directory traversal)
-- ✅ Command blocking (blocks rm -rf, sudo, chmod)
-- ✅ File type whitelist (.ts, .tsx, .js, .jsx, .json, .md, .txt, .css, .html)
-- ✅ Rate limiting (100 req/15min HTTP, 5 conn/60s WebSocket)
-- ✅ API key protection (environment variables only)
+### Backend
 
-### Frontend (To Implement)
-- Validate all user inputs before sending to backend
-- Handle error responses gracefully
-- Don't expose API keys in client code
-- Use wss:// (WebSocket Secure) for production
+- ✅ No API key needed (Claude CLI handles auth)
+- ✅ CORS configurable (default: allow all for development)
+- ✅ Auth optional (disabled for testing)
+- ✅ Rate limiting available (100 req/min)
+- ⚠️ Currently uses `--dangerously-skip-permissions` for Claude CLI
 
----
+### Frontend
 
-## Validation Gates
-
-### Gate 3A: Backend Functional Testing
-**Status**: Backend ready, needs .env with ANTHROPIC_API_KEY
-**Tests**: 14 total (WebSocket protocol, all tools, REST API, automation script)
-**Automation**: `./scripts/validate-gate-3a.sh`
-**Pass**: ALL tests must pass, HARD STOP if any fail
-
-### Gate 4A: Frontend Visual Testing
-**Status**: Blocked (frontend not implemented)
-**Tests**: 14 total (build, screenshots, UI interactions, multi-device)
-**Automation**: expo-mcp autonomous testing
-**Pass**: All screens render correctly, all interactions work, AI validates visually
-
-### Gates 6A-E: Integration Testing
-**Status**: Blocked (awaits Gates 3A and 4A)
-**Tests**: End-to-end workflows across backend and frontend
-**Automation**: expo-mcp visual verification
-**Pass**: All integration flows work correctly
+- Validate inputs before sending
+- Handle errors gracefully
+- Use HTTPS in production
+- Don't expose sensitive data
 
 ---
 
-## Next Steps
+## Token Budget
 
-**IMMEDIATE (Phase 4 - Frontend)**:
+**Total Available**: 1M tokens per session
+**Phase 1 (Backend)**: ~350k consumed
+- Analysis: 150k
+- Setup: 50k
+- Testing: 100k
+- Debugging: 50k
 
-1. Add missing packages via expo-mcp:
-   - zustand
-   - @react-native-async-storage/async-storage
-   - react-native-syntax-highlighter
-   - react-native-markdown-display
-
-2. Implement theme system (src/constants/theme.ts)
-
-3. Implement type definitions (3 files)
-
-4. Implement WebSocket service with Rocket.Chat patterns
-
-5. Implement Zustand store with AsyncStorage persistence
-
-6. Implement 6 core components with testIDs
-
-7. Implement 5 screens per specification
-
-8. Test with expo-mcp autonomous validation
-
-9. Pass Gate 4A
-
-**AFTER Gate 4A**:
-- Phase 6: Integration testing (Gates 6A-E)
-- Phase 7: Production readiness
-- Phase 8: Comprehensive testing
-- Phase 9: Deployment preparation
+**Remaining**: ~650k for frontend migration
 
 ---
 
-## References
+## Skills Created This Session
 
-- **Specification**: `docs/specs/claude-code-expo-v1.md` (2,885 lines)
-- **Implementation Plan**: `docs/plans/2025-10-30-claude-mobile-MCP-FIRST.md`
-- **Execution Checklist**: `docs/EXECUTION-CHECKLIST-COMPLETE.md`
-- **Backend Code**: `backend/src/` (12 files, production-ready)
-- **Validation Gates**: `docs/validation/GATE-3A-*.md`, `docs/validation/GATE-4A-*.md`
+1. **python-fastapi-claude-backend-testing**: Complete backend API reference
+   - OpenAI request/response schemas
+   - SSE format spec
+   - curl test patterns
+   - Verification methods
 
 ---
 
-**This project follows MCP-first approach, skills-driven development, and autonomous testing with expo-mcp.**
+## Git Repository
+
+**Location**: `/Users/nick/Desktop/claude-mobile-expo/`
+**Branch**: master
+**Latest Commit**: c8f525f - Python FastAPI migration
+
+**Important Commits**:
+- c8f525f: Python backend migration (Gate P1)
+- da0e4ef: Migration plan and test script
+- a3eb994: WebSocket integration fixes
+- db54594: Session resume protocol
+- 70d8de9: Next session primer
+
+---
+
+## Contact & Resources
+
+**Claude Code CLI**: https://docs.claude.com/en/docs/claude-code
+**FastAPI Docs**: https://fastapi.tiangolo.com
+**React Native**: https://reactnative.dev
+**Expo**: https://docs.expo.dev
+
+---
+
+**For next session**: Read `gate-p1-PASSED-python-backend-validated-2025-10-31` memory to restore complete context.
