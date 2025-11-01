@@ -89,24 +89,74 @@ class OpenAIStreamConverter:
                 try:
                     # Simple: just look for assistant messages in the dict
                     if isinstance(claude_message, dict):
-                        if (claude_message.get("type") == "assistant" and 
+                        # Handle assistant text content
+                        if (claude_message.get("type") == "assistant" and
                             claude_message.get("message", {}).get("content")):
-                            
+
                             message_content = claude_message["message"]["content"]
+
+                            # Check for tool_use in content array
+                            if isinstance(message_content, list):
+                                for content_item in message_content:
+                                    if isinstance(content_item, dict):
+                                        # Handle tool_use events
+                                        if content_item.get("type") == "tool_use":
+                                            tool_event = {
+                                                "id": self.completion_id,
+                                                "object": "chat.completion.chunk",
+                                                "created": self.created,
+                                                "model": self.model,
+                                                "choices": [{
+                                                    "index": 0,
+                                                    "delta": {
+                                                        "tool_use": {
+                                                            "id": content_item.get("id"),
+                                                            "name": content_item.get("name"),
+                                                            "input": content_item.get("input", {})
+                                                        }
+                                                    },
+                                                    "finish_reason": None
+                                                }]
+                                            }
+                                            yield SSEFormatter.format_event(tool_event)
+                                            continue
+
+                                        # Handle tool_result events
+                                        if content_item.get("type") == "tool_result":
+                                            result_event = {
+                                                "id": self.completion_id,
+                                                "object": "chat.completion.chunk",
+                                                "created": self.created,
+                                                "model": self.model,
+                                                "choices": [{
+                                                    "index": 0,
+                                                    "delta": {
+                                                        "tool_result": {
+                                                            "tool_use_id": content_item.get("tool_use_id"),
+                                                            "content": content_item.get("content"),
+                                                            "is_error": content_item.get("is_error", False)
+                                                        }
+                                                    },
+                                                    "finish_reason": None
+                                                }]
+                                            }
+                                            yield SSEFormatter.format_event(result_event)
+                                            continue
+
                             text_content = ""
-                            
+
                             # Handle content array format: [{"type":"text","text":"..."}]
                             if isinstance(message_content, list):
                                 for content_item in message_content:
-                                    if (isinstance(content_item, dict) and 
-                                        content_item.get("type") == "text" and 
+                                    if (isinstance(content_item, dict) and
+                                        content_item.get("type") == "text" and
                                         content_item.get("text")):
                                         text_content = content_item["text"]
                                         break
                             # Handle simple string content
                             elif isinstance(message_content, str):
                                 text_content = message_content
-                            
+
                             if text_content.strip():
                                 chunk = {
                                     "id": self.completion_id,
@@ -121,7 +171,7 @@ class OpenAIStreamConverter:
                                 }
                                 yield SSEFormatter.format_event(chunk)
                                 assistant_started = True
-                        
+
                         # Stop on result type
                         if claude_message.get("type") == "result":
                             break
