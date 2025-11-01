@@ -1,0 +1,3 @@
+project_name: claude-mobile-expo
+language: typescript
+description: Full-stack mobile app with React Native/Expo frontend and Node.js/WebSocket backend, integrating Claude AI for mobile code development
