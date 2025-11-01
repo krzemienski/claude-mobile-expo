@@ -5,7 +5,8 @@ from pathlib import Path
 from typing import List, Optional
 import structlog
 
-from claude_code_api.core.database import db_manager
+from claude_code_api.core.database import db_manager, AsyncSessionLocal, Session
+from sqlalchemy import update
 
 logger = structlog.get_logger()
 
@@ -23,10 +24,7 @@ class PromptManagerService:
 
     async def set_system_prompt(self, session_id: str, content: str) -> bool:
         """Set/replace system prompt for session."""
-        async with db_manager.AsyncSessionLocal() as session:
-            from sqlalchemy import update
-            from claude_code_api.core.database import Session
-
+        async with AsyncSessionLocal() as session:
             result = await session.execute(
                 update(Session)
                 .where(Session.id == session_id)
