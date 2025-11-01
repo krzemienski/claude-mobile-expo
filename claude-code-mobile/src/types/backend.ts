@@ -85,6 +85,21 @@ export interface FileWriteResponse {
   created: boolean;
 }
 
+export interface GitCommitRequest {
+  project_path: string;
+  message: string;
+  files?: string[];
+  author?: {
+    name: string;
+    email: string;
+  };
+}
+
+export interface HostDiscoverRequest {
+  scan_path: string;
+  max_depth?: number;
+}
+
 // ============================================
 // GIT API
 // ============================================

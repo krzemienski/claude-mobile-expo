@@ -8,13 +8,16 @@ import type {
   ProjectsResponse,
   FilesListResponse,
   FileReadResponse,
+  FileWriteResponse,
   GitStatusResponse,
   GitBranchesResponse,
   GitLogResponse,
+  GitCommitResponse,
   MCPServersResponse,
   PromptTemplatesResponse,
   HealthResponse,
   ModelsListResponse,
+  HostDiscoverProjectsResponse,
 } from '../types/backend';
 
 export interface HTTPClientConfig {
@@ -235,7 +238,7 @@ export class HTTPClient {
     return this.request(`/v1/files/read?path=${encodeURIComponent(path)}`);
   }
 
-  async writeFile(path: string, content: string, createDirs?: boolean): Promise<any> {
+  async writeFile(path: string, content: string, createDirs?: boolean): Promise<FileWriteResponse> {
     return this.request('/v1/files/write', {
       method: 'POST',
       body: JSON.stringify({ path, content, create_dirs: createDirs || false }),
@@ -247,7 +250,7 @@ export class HTTPClient {
     return this.request(`/v1/git/status?project_path=${encodeURIComponent(projectPath)}`);
   }
 
-  async createGitCommit(projectPath: string, message: string): Promise<any> {
+  async createGitCommit(projectPath: string, message: string): Promise<GitCommitResponse> {
     return this.request('/v1/git/commit', {
       method: 'POST',
       body: JSON.stringify({ project_path: projectPath, message }),
@@ -261,7 +264,7 @@ export class HTTPClient {
   }
 
   // HOST DISCOVERY
-  async discoverProjects(scanPath: string, maxDepth?: number): Promise<any> {
+  async discoverProjects(scanPath: string, maxDepth?: number): Promise<HostDiscoverProjectsResponse> {
     const params = new URLSearchParams({ scan_path: scanPath });
     if (maxDepth) params.append('max_depth', String(maxDepth));
     return this.request(`/v1/host/discover-projects?${params}`);
