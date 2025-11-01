@@ -21,6 +21,9 @@ export type RootStackParamList = {
   };
   Settings: undefined;
   Sessions: undefined;
+  Projects: undefined;
+  MCPManagement: undefined;
+  Git: undefined;
 };
 
 /**

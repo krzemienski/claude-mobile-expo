@@ -21,6 +21,7 @@ export const COLORS = {
   primary: '#4ecdc4',        // Teal (buttons, links, highlights)
   primaryDark: '#3db0a8',    // Darker teal (hover/pressed states)
   primaryLight: '#6de3db',   // Lighter teal (disabled states)
+  secondary: '#2a2a2a',      // Secondary surfaces/elements (v2.0)
 
   // Text Colors (flat black theme)
   textPrimary: '#ffffff',    // Pure white (primary text)
