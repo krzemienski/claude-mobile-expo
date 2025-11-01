@@ -155,6 +155,31 @@ class ClaudeOutputParser:
     def is_final_message(self, message: ClaudeMessage) -> bool:
         """Check if this is a final result message."""
         return message.type == "result"
+
+    def is_thinking_message(self, message: ClaudeMessage) -> bool:
+        """Check if message contains thinking/reasoning."""
+        return message.type == "thinking" or message.subtype == "thinking"
+
+    def extract_thinking_content(self, message: ClaudeMessage) -> Optional[str]:
+        """Extract thinking/reasoning content from message."""
+        if not self.is_thinking_message(message):
+            return None
+
+        # Try to extract from message content
+        if message.message:
+            content = message.message.get("content")
+            if isinstance(content, str):
+                return content
+            elif isinstance(content, list):
+                for part in content:
+                    if isinstance(part, dict) and part.get("type") == "thinking":
+                        return part.get("content") or part.get("text")
+
+        # Fallback to direct content field
+        if hasattr(message, 'content'):
+            return message.content
+
+        return None
     
     def get_session_summary(self) -> Dict[str, Any]:
         """Get summary of parsed session."""

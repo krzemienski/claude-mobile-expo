@@ -92,18 +92,36 @@ class Message(Base):
 class APIKey(Base):
     """API Key model for tracking usage."""
     __tablename__ = "api_keys"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     key_hash = Column(String, nullable=False, unique=True)
     name = Column(String)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     last_used_at = Column(DateTime)
-    
+
     # Usage tracking
     total_requests = Column(Integer, default=0)
     total_tokens = Column(Integer, default=0)
     total_cost = Column(Float, default=0.0)
+
+
+class MCPServer(Base):
+    """MCP Server configuration model."""
+    __tablename__ = "mcp_servers"
+
+    id = Column(String, primary_key=True)  # UUID
+    name = Column(String, nullable=False, unique=True)
+    url = Column(String)
+    transport = Column(String, default="http")  # "http" or "stdio"
+    command = Column(String)  # For stdio transport
+    args = Column(Text)  # JSON array of command args
+    env_vars = Column(Text)  # JSON object of environment variables
+    api_key_encrypted = Column(String)  # Encrypted API key
+    enabled = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_used = Column(DateTime)
+    tools_count = Column(Integer, default=0)
 
 
 async def get_db() -> AsyncSession:

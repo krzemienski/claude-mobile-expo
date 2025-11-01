@@ -23,7 +23,7 @@ import {
   ListRenderItemInfo,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
+// LinearGradient removed - flat black theme
 import { useNavigation } from '@react-navigation/native';
 import { useAppStore } from '../store/useAppStore';
 import { useHTTP } from '../contexts/HTTPContext';
@@ -190,14 +190,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = () => {
   }, [messages.length]);
 
   return (
-    <LinearGradient
-      colors={[
-        COLORS.backgroundGradient.start,
-        COLORS.backgroundGradient.middle,
-        COLORS.backgroundGradient.end,
-      ]}
-      style={styles.gradient}
-    >
+    <View style={styles.background}>
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         {/* Header */}
         <View testID="chat-header" style={styles.header}>
@@ -288,13 +281,14 @@ export const ChatScreen: React.FC<ChatScreenProps> = () => {
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  gradient: {
+  background: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
   container: {
     flex: 1,
@@ -306,7 +300,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.base,
     paddingVertical: SPACING.md,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: COLORS.card,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
@@ -348,7 +342,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   inputArea: {
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: COLORS.card,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
     paddingHorizontal: SPACING.base,
@@ -361,7 +355,9 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: COLORS.input,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     borderRadius: 24,
     paddingHorizontal: SPACING.base,
     paddingVertical: SPACING.sm,

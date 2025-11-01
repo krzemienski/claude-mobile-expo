@@ -12,6 +12,9 @@ import { FileBrowserScreen } from '../screens/FileBrowserScreen';
 import { CodeViewerScreen } from '../screens/CodeViewerScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { SessionsScreen } from '../screens/SessionsScreen';
+import { ProjectsScreen } from '../screens/ProjectsScreen';
+import { MCPManagementScreen } from '../screens/MCPManagementScreen';
+import { GitScreen } from '../screens/GitScreen';
 import type { RootStackParamList } from '../types/navigation';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -59,6 +62,27 @@ export const AppNavigator: React.FC = () => {
         component={SessionsScreen}
         options={{
           title: 'Sessions',
+        }}
+      />
+      <Stack.Screen
+        name="Projects"
+        component={ProjectsScreen}
+        options={{
+          title: 'Projects',
+        }}
+      />
+      <Stack.Screen
+        name="MCPManagement"
+        component={MCPManagementScreen}
+        options={{
+          title: 'MCP Servers',
+        }}
+      />
+      <Stack.Screen
+        name="Git"
+        component={GitScreen}
+        options={{
+          title: 'Git',
         }}
       />
     </Stack.Navigator>

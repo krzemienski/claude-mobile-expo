@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     
     # Server Configuration
     host: str = "0.0.0.0"
-    port: int = 8000
+    port: int = 8001
     debug: bool = False
     
     # Authentication
@@ -74,12 +74,15 @@ class Settings(BaseSettings):
             return [x.strip() for x in v.split(',') if x.strip()]
         return v or []
     
-    # Claude Configuration  
+    # Claude Configuration
     claude_binary_path: str = find_claude_binary()
     claude_api_key: str = ""
     default_model: str = "claude-3-5-sonnet-20241022"
     max_concurrent_sessions: int = 10
     session_timeout_minutes: int = 30
+
+    # MCP Configuration
+    mcp_encryption_key: str = ""
     
     # Project Configuration
     project_root: str = "/tmp/claude_projects"

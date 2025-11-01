@@ -6,7 +6,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
+// LinearGradient removed - flat black theme
 import { useAppStore } from '../store/useAppStore';
 import { useHTTP } from '../contexts/HTTPContext';
 import { Session } from '../types/models';
@@ -92,7 +92,7 @@ export const SessionsScreen: React.FC<SessionsScreenProps> = ({ navigation }) =>
   );
 
   return (
-    <LinearGradient colors={[COLORS.backgroundGradient.start, COLORS.backgroundGradient.middle, COLORS.backgroundGradient.end]} style={styles.gradient}>
+    <View style={styles.background}>
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
         <View testID="sessions-header" style={styles.header}>
           <TouchableOpacity testID="back-button" onPress={() => navigation.goBack()}>
@@ -117,12 +117,12 @@ export const SessionsScreen: React.FC<SessionsScreenProps> = ({ navigation }) =>
           }
         />
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
+  background: { flex: 1, backgroundColor: COLORS.background },
   container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 60, paddingHorizontal: SPACING.base, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   backIcon: { fontSize: 28, color: COLORS.primary },

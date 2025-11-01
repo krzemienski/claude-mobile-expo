@@ -65,7 +65,8 @@ export interface Message {
   content: string;               // Message content
   timestamp: Date;               // Message timestamp
   isStreaming?: boolean;         // Streaming status
-  toolExecutions?: ToolExecution[]; // Tool results
+  toolExecutions?: ToolExecution[]; // Tool results - Phase 7 integration
+  thinking?: string[];           // Thinking blocks - Phase 9
   metadata?: MessageMetadata;    // Additional data
   tokensUsed?: {
     input: number;

@@ -6,7 +6,7 @@
 import React from 'react';
 import { View, Text, TextInput, Switch, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
+// LinearGradient removed - flat black theme
 import { useAppStore } from '../store/useAppStore';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants/theme';
 import type { SettingsScreenProps } from '../types/navigation';
@@ -16,10 +16,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
   const updateSettings = useAppStore((state) => state.updateSettings);
 
   return (
-    <LinearGradient
-      colors={[COLORS.backgroundGradient.start, COLORS.backgroundGradient.middle, COLORS.backgroundGradient.end]}
-      style={styles.gradient}
-    >
+    <View style={styles.background}>
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
         <View testID="settings-header" style={styles.header}>
           <TouchableOpacity testID="back-button" onPress={() => navigation.goBack()}>
@@ -107,12 +104,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
           </View>
         </ScrollView>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
+  background: { flex: 1, backgroundColor: COLORS.background },
   container: { flex: 1 },
   header: {
     flexDirection: 'row',
@@ -129,7 +126,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: TYPOGRAPHY.fontSize.lg, fontWeight: TYPOGRAPHY.fontWeight.bold, color: COLORS.textPrimary, marginTop: SPACING.xl, marginBottom: SPACING.md, paddingHorizontal: SPACING.base },
   inputField: { marginHorizontal: SPACING.base, marginVertical: SPACING.sm },
   label: { fontSize: TYPOGRAPHY.fontSize.base, color: COLORS.textPrimary, marginBottom: SPACING.xs },
-  input: { height: 56, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: BORDER_RADIUS.lg, paddingHorizontal: SPACING.base, fontSize: TYPOGRAPHY.fontSize.md, color: COLORS.textPrimary },
+  input: { height: 56, backgroundColor: COLORS.input, borderWidth: 1, borderColor: COLORS.border, borderRadius: BORDER_RADIUS.lg, paddingHorizontal: SPACING.base, fontSize: TYPOGRAPHY.fontSize.md, color: COLORS.textPrimary },
   toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 56, paddingHorizontal: SPACING.base, marginVertical: SPACING.xs },
   toggleLabel: { fontSize: TYPOGRAPHY.fontSize.md, color: COLORS.textPrimary },
   actionButton: { height: 48, backgroundColor: COLORS.primary, borderRadius: BORDER_RADIUS.lg, marginHorizontal: SPACING.base, marginVertical: SPACING.sm, alignItems: 'center', justifyContent: 'center' },

@@ -15,6 +15,9 @@ export interface SSEClientConfig {
   headers?: Record<string, string>;
   body?: any;
   onMessage: (data: any) => void;
+  onToolUse?: (data: any) => void;
+  onToolResult?: (data: any) => void;
+  onThinking?: (data: any) => void;
   onError?: (error: Error) => void;
   onComplete?: () => void;
 }
@@ -136,6 +139,21 @@ export class SSEClient {
         if (data) {
           try {
             const parsed = JSON.parse(data);
+
+            // Check for tool events
+            const delta = parsed.choices?.[0]?.delta;
+            if (delta?.tool_use) {
+              console.log('[SSEClient] Tool use event:', delta.tool_use);
+              this.config.onToolUse?.(delta.tool_use);
+            } else if (delta?.tool_result) {
+              console.log('[SSEClient] Tool result event:', delta.tool_result);
+              this.config.onToolResult?.(delta.tool_result);
+            } else if (delta?.thinking) {
+              console.log('[SSEClient] Thinking event:', delta.thinking);
+              this.config.onThinking?.(delta.thinking);
+            }
+
+            // Always call onMessage for content
             console.log('[SSEClient] Parsed event, calling onMessage');
             this.config.onMessage(parsed);
           } catch (error) {
@@ -179,6 +197,9 @@ export function createChatCompletionStream(
   },
   callbacks: {
     onChunk: (content: string) => void;
+    onToolUse?: (data: any) => void;
+    onToolResult?: (data: any) => void;
+    onThinking?: (data: any) => void;
     onComplete?: () => void;
     onError?: (error: Error) => void;
   }
@@ -198,6 +219,9 @@ export function createChatCompletionStream(
         callbacks.onChunk(content);
       }
     },
+    onToolUse: callbacks.onToolUse,
+    onToolResult: callbacks.onToolResult,
+    onThinking: callbacks.onThinking,
     onComplete: () => {
       console.log('[SSEClient] onComplete callback');
       callbacks.onComplete?.();

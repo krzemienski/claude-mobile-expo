@@ -9,23 +9,24 @@
  */
 
 export const COLORS = {
-  // Background Gradients (spec lines 221-225)
+  // FLAT BLACK THEME - VS Code / Cursor Aesthetic
+  background: '#0a0a0a',     // Slightly warm black
   backgroundGradient: {
-    start: '#0f0c29',    // Deep purple-blue
-    middle: '#302b63',   // Medium purple
-    end: '#24243e',      // Dark purple-gray
+    start: '#0a0a0a',        // Flat black (no gradient in v2.0)
+    middle: '#0a0a0a',
+    end: '#0a0a0a',
   },
-  
-  // Primary Actions (spec lines 227-230)
+
+  // Primary Actions (teal accent kept)
   primary: '#4ecdc4',        // Teal (buttons, links, highlights)
   primaryDark: '#3db0a8',    // Darker teal (hover/pressed states)
   primaryLight: '#6de3db',   // Lighter teal (disabled states)
-  
-  // Text Colors (spec lines 232-236)
-  textPrimary: '#ecf0f1',    // Off-white (primary text)
-  textSecondary: '#7f8c8d',  // Gray (secondary text)
-  textTertiary: '#95a5a6',   // Light gray (tertiary text)
-  textDark: '#0f0c29',       // Dark (on light backgrounds)
+
+  // Text Colors (flat black theme)
+  textPrimary: '#ffffff',    // Pure white (primary text)
+  textSecondary: '#6b7280',  // Gray-500 (secondary text)
+  textTertiary: '#9ca3af',   // Gray-400 (tertiary text)
+  textDark: '#0a0a0a',       // Dark (on light backgrounds)
   
   // Status Colors (spec lines 238-242)
   success: '#2ecc71',        // Green (success states)
@@ -33,11 +34,14 @@ export const COLORS = {
   error: '#e74c3c',          // Red (error states)
   info: '#3498db',           // Blue (info states)
   
-  // Functional Colors (spec lines 244-248)
-  overlay: 'rgba(0, 0, 0, 0.5)',           // Modal overlays
-  border: 'rgba(255, 255, 255, 0.1)',      // Borders and dividers
-  surface: 'rgba(255, 255, 255, 0.05)',    // Cards and surfaces
-  surfaceHighlight: 'rgba(255, 255, 255, 0.1)',
+  // Flat Black Functional Colors
+  card: '#1a1a1a',                         // Elevated surfaces
+  overlay: 'rgba(0, 0, 0, 0.7)',           // Modal overlays
+  border: '#2a2a2a',                       // Subtle borders
+  surface: '#1a1a1a',                      // Cards and surfaces
+  surfaceHighlight: '#2a2a2a',
+  input: '#1a1a1a',                        // Input backgrounds
+  ring: '#4ecdc4',                         // Focus rings
   
   // Code Highlighting (spec lines 250-256)
   codeBackground: '#2c3e50',

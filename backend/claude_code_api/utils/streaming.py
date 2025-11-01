@@ -143,6 +143,27 @@ class OpenAIStreamConverter:
                                             yield SSEFormatter.format_event(result_event)
                                             continue
 
+                                        # Handle thinking blocks
+                                        if content_item.get("type") == "thinking":
+                                            thinking_event = {
+                                                "id": self.completion_id,
+                                                "object": "chat.completion.chunk",
+                                                "created": self.created,
+                                                "model": self.model,
+                                                "choices": [{
+                                                    "index": 0,
+                                                    "delta": {
+                                                        "thinking": {
+                                                            "content": content_item.get("content") or content_item.get("text"),
+                                                            "step": content_item.get("step", 0)
+                                                        }
+                                                    },
+                                                    "finish_reason": None
+                                                }]
+                                            }
+                                            yield SSEFormatter.format_event(thinking_event)
+                                            continue
+
                             text_content = ""
 
                             # Handle content array format: [{"type":"text","text":"..."}]

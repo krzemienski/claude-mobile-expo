@@ -10,6 +10,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Message, MessageRole } from '../types/models';
+import { ToolExecutionCard } from './ToolExecutionCard';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants/theme';
 
 interface MessageBubbleProps {
@@ -44,6 +45,21 @@ export const MessageBubble = React.memo<MessageBubbleProps>(
           >
             {message.content}
           </Text>
+
+          {/* Tool Executions - Phase 7 */}
+          {message.toolExecutions && message.toolExecutions.length > 0 && (
+            <View style={styles.toolsContainer}>
+              {message.toolExecutions.map((tool) => (
+                <ToolExecutionCard
+                  key={tool.id}
+                  tool={tool.tool}
+                  input={tool.input}
+                  result={tool.result}
+                  error={tool.error}
+                />
+              ))}
+            </View>
+          )}
         </View>
         <Text style={[styles.timestamp, isUser ? styles.userTimestamp : styles.assistantTimestamp]}>
           {formatTime(message.timestamp)}
@@ -78,7 +94,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   assistantBubble: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   text: {
     fontSize: TYPOGRAPHY.fontSize.md,
@@ -101,6 +119,9 @@ const styles = StyleSheet.create({
   assistantTimestamp: {
     color: COLORS.textSecondary,
     textAlign: 'left',
+  },
+  toolsContainer: {
+    marginTop: SPACING.sm,
   },
 });
 
