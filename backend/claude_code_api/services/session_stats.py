@@ -2,7 +2,7 @@
 
 from datetime import datetime, timedelta
 from typing import Dict, List, Any
-import struct log
+import structlog
 
 from claude_code_api.core.database import AsyncSessionLocal, Session, Message
 from sqlalchemy import select, func
