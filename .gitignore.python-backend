@@ -1,0 +1,8 @@
+claude-code-api/
+claude-code-api/*.db
+claude-code-api/*.log
+claude-code-api/claude_code_api/__pycache__/
+claude-code-api/claude_code_api/**/__pycache__/
+claude-code-api/claude_code_api/**/*.pyc
+claude-code-api/claude_code_api/test.txt
+claude-code-api/claude_code_api/verified.txt
