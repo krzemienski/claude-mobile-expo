@@ -3,6 +3,20 @@
  * Handles non-streaming requests to OpenAI-compatible API
  */
 
+import type {
+  SessionsResponse,
+  ProjectsResponse,
+  FilesListResponse,
+  FileReadResponse,
+  GitStatusResponse,
+  GitBranchesResponse,
+  GitLogResponse,
+  MCPServersResponse,
+  PromptTemplatesResponse,
+  HealthResponse,
+  ModelsListResponse,
+} from '../types/backend';
+
 export interface HTTPClientConfig {
   baseURL: string;
   headers?: Record<string, string>;
@@ -114,12 +128,7 @@ export class HTTPClient {
   /**
    * Health check
    */
-  async health(): Promise<{
-    status: string;
-    version: string;
-    claude_version: string;
-    active_sessions: number;
-  }> {
+  async health(): Promise<HealthResponse> {
     return this.request('/health');
   }
 
@@ -200,10 +209,7 @@ export class HTTPClient {
   /**
    * List sessions
    */
-  async listSessions(projectId?: string): Promise<{
-    data: any[];
-    pagination: any;
-  }> {
+  async listSessions(projectId?: string): Promise<SessionsResponse> {
     const query = projectId ? `?project_id=${projectId}` : '';
     return this.request(`/v1/sessions${query}`);
   }
@@ -218,14 +224,14 @@ export class HTTPClient {
   }
 
   // FILE OPERATIONS - Phase 1
-  async listFiles(path: string, pattern?: string, hidden?: boolean): Promise<any> {
+  async listFiles(path: string, pattern?: string, hidden?: boolean): Promise<FilesListResponse> {
     const params = new URLSearchParams({ path });
     if (pattern) params.append('pattern', pattern);
     if (hidden !== undefined) params.append('hidden', String(hidden));
     return this.request(`/v1/files/list?${params}`);
   }
 
-  async readFile(path: string): Promise<{content: string; path: string; size: number}> {
+  async readFile(path: string): Promise<FileReadResponse> {
     return this.request(`/v1/files/read?path=${encodeURIComponent(path)}`);
   }
 
@@ -237,7 +243,7 @@ export class HTTPClient {
   }
 
   // GIT OPERATIONS - Phase 2
-  async getGitStatus(projectPath: string): Promise<any> {
+  async getGitStatus(projectPath: string): Promise<GitStatusResponse> {
     return this.request(`/v1/git/status?project_path=${encodeURIComponent(projectPath)}`);
   }
 
@@ -248,7 +254,7 @@ export class HTTPClient {
     });
   }
 
-  async getGitLog(projectPath: string, max?: number): Promise<any> {
+  async getGitLog(projectPath: string, max?: number): Promise<GitLogResponse> {
     const params = new URLSearchParams({ project_path: projectPath });
     if (max) params.append('max', String(max));
     return this.request(`/v1/git/log?${params}`);
@@ -262,12 +268,12 @@ export class HTTPClient {
   }
 
   // MCP MANAGEMENT - Phase 3
-  async listMCPServers(): Promise<any> {
+  async listMCPServers(): Promise<MCPServersResponse> {
     return this.request('/v1/mcp/servers');
   }
 
   // PROMPTS - Phase 4
-  async listPromptTemplates(): Promise<any> {
+  async listPromptTemplates(): Promise<PromptTemplatesResponse> {
     return this.request('/v1/prompts/templates');
   }
 }
