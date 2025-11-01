@@ -216,4 +216,58 @@ export class HTTPClient {
       method: 'DELETE',
     });
   }
+
+  // FILE OPERATIONS - Phase 1
+  async listFiles(path: string, pattern?: string, hidden?: boolean): Promise<any> {
+    const params = new URLSearchParams({ path });
+    if (pattern) params.append('pattern', pattern);
+    if (hidden !== undefined) params.append('hidden', String(hidden));
+    return this.request(`/v1/files/list?${params}`);
+  }
+
+  async readFile(path: string): Promise<{content: string; path: string; size: number}> {
+    return this.request(`/v1/files/read?path=${encodeURIComponent(path)}`);
+  }
+
+  async writeFile(path: string, content: string, createDirs?: boolean): Promise<any> {
+    return this.request('/v1/files/write', {
+      method: 'POST',
+      body: JSON.stringify({ path, content, create_dirs: createDirs || false }),
+    });
+  }
+
+  // GIT OPERATIONS - Phase 2
+  async getGitStatus(projectPath: string): Promise<any> {
+    return this.request(`/v1/git/status?project_path=${encodeURIComponent(projectPath)}`);
+  }
+
+  async createGitCommit(projectPath: string, message: string): Promise<any> {
+    return this.request('/v1/git/commit', {
+      method: 'POST',
+      body: JSON.stringify({ project_path: projectPath, message }),
+    });
+  }
+
+  async getGitLog(projectPath: string, max?: number): Promise<any> {
+    const params = new URLSearchParams({ project_path: projectPath });
+    if (max) params.append('max', String(max));
+    return this.request(`/v1/git/log?${params}`);
+  }
+
+  // HOST DISCOVERY
+  async discoverProjects(scanPath: string, maxDepth?: number): Promise<any> {
+    const params = new URLSearchParams({ scan_path: scanPath });
+    if (maxDepth) params.append('max_depth', String(maxDepth));
+    return this.request(`/v1/host/discover-projects?${params}`);
+  }
+
+  // MCP MANAGEMENT - Phase 3
+  async listMCPServers(): Promise<any> {
+    return this.request('/v1/mcp/servers');
+  }
+
+  // PROMPTS - Phase 4
+  async listPromptTemplates(): Promise<any> {
+    return this.request('/v1/prompts/templates');
+  }
 }
