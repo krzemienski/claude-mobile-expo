@@ -210,10 +210,16 @@ class GitOperationsService:
         try:
             if staged:
                 # Staged changes (index vs HEAD)
-                diff = repo.git.diff('--staged', '--unified=' + str(context_lines), file_path or '')
+                if file_path:
+                    diff = repo.git.diff('--staged', '--unified=' + str(context_lines), file_path)
+                else:
+                    diff = repo.git.diff('--staged', '--unified=' + str(context_lines))
             else:
                 # Unstaged changes (working tree vs index)
-                diff = repo.git.diff('--unified=' + str(context_lines), file_path or '')
+                if file_path:
+                    diff = repo.git.diff('--unified=' + str(context_lines), file_path)
+                else:
+                    diff = repo.git.diff('--unified=' + str(context_lines))
 
             return diff
 

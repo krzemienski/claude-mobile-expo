@@ -66,12 +66,18 @@ export interface Message {
   timestamp: Date;               // Message timestamp
   isStreaming?: boolean;         // Streaming status
   toolExecutions?: ToolExecution[]; // Tool results - Phase 7 integration
-  thinking?: string[];           // Thinking blocks - Phase 9
+  thinking?: ThinkingStep[];     // Thinking blocks - Phase 9
   metadata?: MessageMetadata;    // Additional data
   tokensUsed?: {
     input: number;
     output: number;
   };
+}
+
+export interface ThinkingStep {
+  content: string;
+  step_number: number;
+  timestamp?: string;
 }
 
 export enum MessageRole {

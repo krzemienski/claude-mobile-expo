@@ -24,6 +24,8 @@ export type RootStackParamList = {
   Projects: undefined;
   MCPManagement: undefined;
   Git: undefined;
+  Skills: undefined;
+  Agents: undefined;
 };
 
 /**
@@ -38,6 +40,8 @@ export type SessionsScreenProps = NativeStackScreenProps<RootStackParamList, 'Se
 export type ProjectsScreenProps = NativeStackScreenProps<RootStackParamList, 'Projects'>;
 export type GitScreenProps = NativeStackScreenProps<RootStackParamList, 'Git'>;
 export type MCPManagementScreenProps = NativeStackScreenProps<RootStackParamList, 'MCPManagement'>;
+export type SkillsScreenProps = NativeStackScreenProps<RootStackParamList, 'Skills'>;
+export type AgentsScreenProps = NativeStackScreenProps<RootStackParamList, 'Agents'>;
 
 /**
  * Generic Screen Props Type

@@ -31,6 +31,8 @@ from claude_code_api.api.git_remote import router as git_remote_router
 from claude_code_api.api.mcp import router as mcp_router
 from claude_code_api.api.prompts import router as prompts_router
 from claude_code_api.api.stats import router as stats_router
+from claude_code_api.api.skills import router as skills_router
+from claude_code_api.api.agents import router as agents_router
 from claude_code_api.core.auth import auth_middleware
 
 
@@ -189,6 +191,8 @@ app.include_router(git_remote_router, prefix="/v1", tags=["git"])
 app.include_router(mcp_router, prefix="/v1", tags=["mcp"])
 app.include_router(prompts_router, prefix="/v1", tags=["prompts"])
 app.include_router(stats_router, prefix="/v1", tags=["stats"])
+app.include_router(skills_router, prefix="/v1", tags=["skills"])
+app.include_router(agents_router, prefix="/v1", tags=["agents"])
 
 
 if __name__ == "__main__":

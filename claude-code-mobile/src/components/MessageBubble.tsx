@@ -11,6 +11,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Message, MessageRole } from '../types/models';
 import { ToolExecutionCard } from './ToolExecutionCard';
+import { ThinkingAccordion } from './ThinkingAccordion';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants/theme';
 
 interface MessageBubbleProps {
@@ -59,6 +60,11 @@ export const MessageBubble = React.memo<MessageBubbleProps>(
                 />
               ))}
             </View>
+          )}
+
+          {/* Thinking Display - Phase 9 */}
+          {message.thinking && message.thinking.length > 0 && (
+            <ThinkingAccordion thoughts={message.thinking} />
           )}
         </View>
         <Text style={[styles.timestamp, isUser ? styles.userTimestamp : styles.assistantTimestamp]}>
