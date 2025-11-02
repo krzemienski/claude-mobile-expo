@@ -34,6 +34,9 @@ from claude_code_api.api.stats import router as stats_router
 from claude_code_api.api.skills import router as skills_router
 from claude_code_api.api.agents import router as agents_router
 from claude_code_api.core.auth import auth_middleware
+from claude_code_api.middleware.rate_limit import rate_limit_middleware
+from claude_code_api.middleware.cache_middleware import cache_middleware
+from claude_code_api.middleware.logging_middleware import logging_middleware
 
 
 # Configure structured logging
@@ -110,8 +113,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Authentication middleware
+# Middleware stack (order matters: first added = outermost)
 app.middleware("http")(auth_middleware)
+app.middleware("http")(logging_middleware)
+app.middleware("http")(rate_limit_middleware)
+app.middleware("http")(cache_middleware)
 
 
 @app.exception_handler(Exception)
