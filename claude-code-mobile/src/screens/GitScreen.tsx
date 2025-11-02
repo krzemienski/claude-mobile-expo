@@ -16,7 +16,12 @@ interface GitStatus {
   has_commits: boolean;
 }
 
-export const GitScreen: React.FC = ({ navigation }: any) => {
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../types/navigation';
+
+type Props = NativeStackScreenProps<RootStackParamList, 'Git'>;
+
+export const GitScreen: React.FC<Props> = ({ navigation }) => {
   const [status, setStatus] = useState<GitStatus | null>(null);
   const [commitMessage, setCommitMessage] = useState('');
   const [projectPath] = useState('/Users/nick/Desktop/claude-mobile-expo');

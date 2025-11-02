@@ -17,7 +17,12 @@ interface Project {
   session_count: number;
 }
 
-export const ProjectsScreen: React.FC = ({ navigation }: any) => {
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../types/navigation';
+
+type Props = NativeStackScreenProps<RootStackParamList, 'Projects'>;
+
+export const ProjectsScreen: React.FC<Props> = ({ navigation }) => {
   const { httpService } = useHTTP();
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(false);

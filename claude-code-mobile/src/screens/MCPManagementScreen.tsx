@@ -17,7 +17,12 @@ interface MCPServer {
   tools_count: number;
 }
 
-export const MCPManagementScreen: React.FC = ({ navigation }: any) => {
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../types/navigation';
+
+type Props = NativeStackScreenProps<RootStackParamList, 'MCPManagement'>;
+
+export const MCPManagementScreen: React.FC<Props> = ({ navigation }) => {
   const [servers, setServers] = useState<MCPServer[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
