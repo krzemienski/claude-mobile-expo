@@ -35,6 +35,9 @@ export type FileBrowserScreenProps = NativeStackScreenProps<RootStackParamList, 
 export type CodeViewerScreenProps = NativeStackScreenProps<RootStackParamList, 'CodeViewer'>;
 export type SettingsScreenProps = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 export type SessionsScreenProps = NativeStackScreenProps<RootStackParamList, 'Sessions'>;
+export type ProjectsScreenProps = NativeStackScreenProps<RootStackParamList, 'Projects'>;
+export type GitScreenProps = NativeStackScreenProps<RootStackParamList, 'Git'>;
+export type MCPManagementScreenProps = NativeStackScreenProps<RootStackParamList, 'MCPManagement'>;
 
 /**
  * Generic Screen Props Type
