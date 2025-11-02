@@ -34,7 +34,7 @@ export const SessionsScreen: React.FC<SessionsScreenProps> = ({ navigation }) =>
       const response = await httpService.listSessions();
       // Map backend sessions to frontend Session type and update store
       const backendSessions = response.data || [];
-      const mappedSessions = backendSessions.map((s: any) => ({
+      const mappedSessions = backendSessions.map((s) => ({
         id: s.id,
         projectId: s.project_id,
         title: s.title || `Session ${s.id.substring(0, 8)}`,

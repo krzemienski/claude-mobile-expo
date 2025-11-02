@@ -28,7 +28,7 @@ export const FileBrowserScreen: React.FC<FileBrowserScreenProps> = ({ navigation
     setIsLoading(true);
     try {
       const data = await httpService.httpClient.listFiles(currentPath);
-      const mapped = data.map((f: any) => ({
+      const mapped = data.map((f) => ({
         path: f.path,
         name: f.name,
         extension: '',
