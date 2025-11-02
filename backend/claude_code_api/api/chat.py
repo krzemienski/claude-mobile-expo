@@ -22,9 +22,13 @@ from claude_code_api.core.claude_manager import create_project_directory
 from claude_code_api.core.session_manager import SessionManager, ConversationManager
 from claude_code_api.utils.streaming import create_sse_response, create_non_streaming_response
 from claude_code_api.utils.parser import ClaudeOutputParser, estimate_tokens
+from claude_code_api.services.slash_commands import SlashCommandService
 
 logger = structlog.get_logger()
 router = APIRouter()
+
+# Initialize slash command service
+slash_command_service = SlashCommandService()
 
 
 @router.post("/chat/completions")
@@ -127,14 +131,64 @@ async def create_chat_completion(
             )
         
         user_prompt = user_messages[-1].get_text_content()
-        
+
+        # Handle project context first (needed for some slash commands)
+        project_id = request.project_id or f"default-{client_id}"
+        project_path = create_project_directory(project_id)
+
+        # Check for slash commands BEFORE calling Claude
+        if slash_command_service.is_slash_command(user_prompt):
+            logger.info("Slash command detected", command=user_prompt[:50])
+
+            # Get or create session for command context
+            if request.session_id:
+                session_id = request.session_id
+            else:
+                # Create temporary session for command
+                claude_model = validate_claude_model(request.model)
+                session_id = await session_manager.create_session(
+                    project_id=project_id,
+                    model=claude_model,
+                    system_prompt=request.system_prompt
+                )
+
+            # Execute slash command
+            command_result = await slash_command_service.execute_command(
+                user_prompt,
+                session_id,
+                project_path
+            )
+
+            # Return command result as non-streaming response
+            response_content = json.dumps(command_result, indent=2)
+
+            return JSONResponse(
+                content={
+                    "id": f"chatcmpl-{uuid.uuid4()}",
+                    "object": "chat.completion",
+                    "created": int(datetime.utcnow().timestamp()),
+                    "model": request.model,
+                    "choices": [
+                        {
+                            "index": 0,
+                            "message": {
+                                "role": "assistant",
+                                "content": response_content,
+                            },
+                            "finish_reason": "stop",
+                        }
+                    ],
+                    "usage": {
+                        "prompt_tokens": estimate_tokens(user_prompt),
+                        "completion_tokens": estimate_tokens(response_content),
+                        "total_tokens": estimate_tokens(user_prompt) + estimate_tokens(response_content),
+                    },
+                }
+            )
+
         # Extract system prompt
         system_messages = [msg for msg in request.messages if msg.role == "system"]
         system_prompt = system_messages[0].get_text_content() if system_messages else request.system_prompt
-        
-        # Handle project context
-        project_id = request.project_id or f"default-{client_id}"
-        project_path = create_project_directory(project_id)
         
         # Handle session management
         if request.session_id:

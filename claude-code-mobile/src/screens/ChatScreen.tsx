@@ -171,7 +171,11 @@ export const ChatScreen: React.FC<ChatScreenProps> = () => {
 
   // Handle settings button
   const handleSettings = useCallback(() => {
+    console.log('[ChatScreen] Settings button tapped!');
+    console.log('[ChatScreen] Navigation object:', navigation);
+    console.log('[ChatScreen] Attempting to navigate to Settings...');
     navigation.navigate('Settings');
+    console.log('[ChatScreen] Navigate called');
   }, [navigation]);
 
   // Render message item
@@ -200,6 +204,10 @@ export const ChatScreen: React.FC<ChatScreenProps> = () => {
             testID="settings-button"
             onPress={handleSettings}
             style={styles.settingsButton}
+            accessible={true}
+            accessibilityLabel="Settings"
+            accessibilityRole="button"
+            accessibilityHint="Open settings screen"
           >
             <Text style={styles.settingsIcon}>⚙️</Text>
           </TouchableOpacity>
