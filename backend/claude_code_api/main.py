@@ -37,6 +37,7 @@ from claude_code_api.api.admin import router as admin_router
 from claude_code_api.api.batch import router as batch_router
 from claude_code_api.api.search import router as search_router
 from claude_code_api.api.webhooks import router as webhooks_router
+from claude_code_api.api.health_extended import router as health_extended_router
 from claude_code_api.core.auth import auth_middleware
 from claude_code_api.middleware.rate_limit import rate_limit_middleware
 from claude_code_api.middleware.cache_middleware import cache_middleware
@@ -207,6 +208,7 @@ app.include_router(admin_router, prefix="/v1", tags=["admin"])
 app.include_router(batch_router, prefix="/v1", tags=["batch"])
 app.include_router(search_router, prefix="/v1", tags=["search"])
 app.include_router(webhooks_router, prefix="/v1", tags=["webhooks"])
+app.include_router(health_extended_router, prefix="/v1", tags=["health"])
 
 
 if __name__ == "__main__":
