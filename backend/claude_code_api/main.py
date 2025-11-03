@@ -33,6 +33,10 @@ from claude_code_api.api.prompts import router as prompts_router
 from claude_code_api.api.stats import router as stats_router
 from claude_code_api.api.skills import router as skills_router
 from claude_code_api.api.agents import router as agents_router
+from claude_code_api.api.admin import router as admin_router
+from claude_code_api.api.batch import router as batch_router
+from claude_code_api.api.search import router as search_router
+from claude_code_api.api.webhooks import router as webhooks_router
 from claude_code_api.core.auth import auth_middleware
 from claude_code_api.middleware.rate_limit import rate_limit_middleware
 from claude_code_api.middleware.cache_middleware import cache_middleware
@@ -199,6 +203,10 @@ app.include_router(prompts_router, prefix="/v1", tags=["prompts"])
 app.include_router(stats_router, prefix="/v1", tags=["stats"])
 app.include_router(skills_router, prefix="/v1", tags=["skills"])
 app.include_router(agents_router, prefix="/v1", tags=["agents"])
+app.include_router(admin_router, prefix="/v1", tags=["admin"])
+app.include_router(batch_router, prefix="/v1", tags=["batch"])
+app.include_router(search_router, prefix="/v1", tags=["search"])
+app.include_router(webhooks_router, prefix="/v1", tags=["webhooks"])
 
 
 if __name__ == "__main__":

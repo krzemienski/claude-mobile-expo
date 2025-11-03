@@ -24,6 +24,10 @@ class WebhookResponse(BaseModel):
     active: bool
 
 
+import uuid
+import httpx
+from typing import Dict
+
 # In-memory webhook storage (would use database in production)
 webhooks: Dict[str, WebhookConfig] = {}
 
