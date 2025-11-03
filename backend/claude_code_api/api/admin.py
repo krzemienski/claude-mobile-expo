@@ -1,5 +1,6 @@
 """Admin endpoints for system management."""
 
+from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel
 import structlog
