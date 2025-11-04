@@ -18,9 +18,11 @@ interface Agent {
   size: number;
 }
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Agents'>;
+interface ManualNavigationProps {
+  navigate: (screen: string) => void;
+}
 
-export const AgentsScreen: React.FC<Props> = ({ navigation }) => {
+export const AgentsScreen: React.FC<ManualNavigationProps> = ({ navigate }) => {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -105,7 +107,7 @@ export const AgentsScreen: React.FC<Props> = ({ navigation }) => {
     <View style={styles.background}>
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={() => navigate('Chat')}>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Agents</Text>

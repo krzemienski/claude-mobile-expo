@@ -11,7 +11,11 @@ import { useAppStore } from '../store/useAppStore';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants/theme';
 import type { SettingsScreenProps } from '../types/navigation';
 
-export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
+interface ManualNavigationProps {
+  navigate: (screen: string) => void;
+}
+
+export const SettingsScreen: React.FC<ManualNavigationProps> = ({ navigate }) => {
   const settings = useAppStore((state) => state.settings);
   const updateSettings = useAppStore((state) => state.updateSettings);
 
@@ -19,7 +23,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
     <View style={styles.background}>
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
         <View testID="settings-header" style={styles.header}>
-          <TouchableOpacity testID="back-button" onPress={() => navigation.goBack()}>
+          <TouchableOpacity testID="back-button" onPress={() => navigate('Chat')}>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Settings</Text>
@@ -94,7 +98,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
           </View>
 
           <Text style={styles.sectionTitle}>⚡ Actions</Text>
-          <TouchableOpacity testID="view-sessions-button" style={styles.actionButton} onPress={() => navigation.navigate('Sessions')}>
+          <TouchableOpacity testID="view-sessions-button" style={styles.actionButton} onPress={() => navigate('Sessions')}>
             <Text style={styles.actionButtonText}>📂 View Sessions</Text>
           </TouchableOpacity>
 

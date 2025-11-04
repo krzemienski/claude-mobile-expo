@@ -19,9 +19,11 @@ interface GitStatus {
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/navigation';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Git'>;
+interface ManualNavigationProps {
+  navigate: (screen: string) => void;
+}
 
-export const GitScreen: React.FC<Props> = ({ navigation }) => {
+export const GitScreen: React.FC<ManualNavigationProps> = ({ navigate }) => {
   const [status, setStatus] = useState<GitStatus | null>(null);
   const [commitMessage, setCommitMessage] = useState('');
   const [projectPath] = useState('/Users/nick/Desktop/claude-mobile-expo');
@@ -62,7 +64,7 @@ export const GitScreen: React.FC<Props> = ({ navigation }) => {
     <View style={styles.background}>
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={() => navigate('Chat')}>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Git</Text>

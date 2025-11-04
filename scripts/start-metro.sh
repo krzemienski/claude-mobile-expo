@@ -11,6 +11,9 @@ echo "🚀 Starting Metro bundler..."
 # Kill existing Metro
 pkill -f "react-native.*start" 2>/dev/null || true
 pkill -f "metro.*start" 2>/dev/null || true
+pkill -f "expo start" 2>/dev/null || true
+lsof -ti:8081 | xargs kill -9 2>/dev/null || true
+sleep 2
 
 # Clear cache if requested
 if [[ "${1:-}" == "--clear-cache" ]]; then
@@ -34,11 +37,19 @@ echo "📄 Logs: $LOGS_DIR/metro.log"
 
 # Wait for Metro to be ready (max 30 seconds)
 echo "⏳ Waiting for Metro to be ready..."
-timeout 30 bash -c "until grep -q 'Metro.*waiting\|Metro.*ready' '$LOGS_DIR/metro.log' 2>/dev/null; do sleep 1; done" || {
+SECONDS=0
+while [ $SECONDS -lt 30 ]; do
+  if grep -q 'Metro.*waiting\|Metro.*ready\|Waiting on http' "$LOGS_DIR/metro.log" 2>/dev/null; then
+    break
+  fi
+  sleep 1
+done
+
+if [ $SECONDS -ge 30 ]; then
   echo "❌ Metro failed to start within 30 seconds"
   cat "$LOGS_DIR/metro.log"
   exit 1
-}
+fi
 
 echo "✅ Metro started successfully"
 echo "🌐 Listening on: http://localhost:8081"

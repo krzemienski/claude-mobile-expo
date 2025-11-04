@@ -65,7 +65,7 @@ interface AppState {
  * Default settings
  */
 const defaultSettings: AppSettings = {
-  serverUrl: 'http://192.168.0.153:8001',
+  serverUrl: 'http://localhost:8001',
   projectPath: '',
   model: 'claude-3-5-haiku-20241022',
   autoScroll: true,

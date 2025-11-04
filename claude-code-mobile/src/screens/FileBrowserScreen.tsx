@@ -10,14 +10,19 @@ import { useHTTP } from '../contexts/HTTPContext';
 import { FileItem } from '../components/FileItem';
 import { FileMetadata, FileType } from '../types/models';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants/theme';
-import type { FileBrowserScreenProps } from '../types/navigation';
+import { useAppStore } from '../store/useAppStore';
 
-export const FileBrowserScreen: React.FC<FileBrowserScreenProps> = ({ navigation, route }) => {
+interface ManualNavigationProps {
+  navigate: (screen: string) => void;
+}
+
+export const FileBrowserScreen: React.FC<ManualNavigationProps> = ({ navigate }) => {
   const { httpService } = useHTTP();
+  const setCurrentFile = useAppStore((state) => state.setCurrentFile);
   const [searchText, setSearchText] = useState('');
   const [files, setFiles] = useState<FileMetadata[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const currentPath = route.params?.path || '/Users/nick/Desktop/claude-mobile-expo';
+  const [currentPath, setCurrentPath] = useState('/Users/nick/Desktop/claude-mobile-expo');
 
   useEffect(() => {
     loadFiles();
@@ -28,7 +33,7 @@ export const FileBrowserScreen: React.FC<FileBrowserScreenProps> = ({ navigation
     setIsLoading(true);
     try {
       const data = await httpService.httpClient.listFiles(currentPath);
-      const mapped = data.map((f) => ({
+      const mapped = data.map((f: any) => ({
         path: f.path,
         name: f.name,
         extension: '',
@@ -46,9 +51,12 @@ export const FileBrowserScreen: React.FC<FileBrowserScreenProps> = ({ navigation
 
   const handleFilePress = (file: FileMetadata) => {
     if (file.type === FileType.DIRECTORY) {
-      navigation.push('FileBrowser', { path: file.path });
+      // Navigate into directory
+      setCurrentPath(file.path);
     } else {
-      navigation.navigate('CodeViewer', { filePath: file.path, fileName: file.name });
+      // Open in code viewer - store file in Zustand then navigate
+      setCurrentFile({ path: file.path, content: '' });
+      navigate('CodeViewer');
     }
   };
 
@@ -56,7 +64,7 @@ export const FileBrowserScreen: React.FC<FileBrowserScreenProps> = ({ navigation
     <View style={styles.background}>
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
         <View testID="filebrowser-header" style={styles.header}>
-          <TouchableOpacity testID="back-button" onPress={() => navigation.goBack()}>
+          <TouchableOpacity testID="back-button" onPress={() => navigate('Chat')}>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Files</Text>

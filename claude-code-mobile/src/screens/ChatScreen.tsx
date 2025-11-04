@@ -37,8 +37,16 @@ import { ConnectionStatus as Status } from '../services/http/types';
 import { COLORS, SPACING, TYPOGRAPHY } from '../constants/theme';
 import type { ChatScreenProps } from '../types/navigation';
 
-export const ChatScreen: React.FC<ChatScreenProps> = () => {
-  const navigation = useNavigation();
+interface ManualNavigationProps {
+  navigate: (screen: string) => void;
+}
+
+export const ChatScreen: React.FC<ManualNavigationProps> = ({ navigate: manualNavigate }) => {
+  console.log('[ChatScreen] Component mounting...');
+  console.log('[ChatScreen] Received navigate prop:', typeof manualNavigate);
+  console.log('[ChatScreen] Navigate function:', manualNavigate);
+
+  // const navigation = useNavigation(); // Disabled - using manual navigation
   const [inputText, setInputText] = useState('');
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   const flatListRef = useRef<FlatList>(null);
@@ -171,12 +179,19 @@ export const ChatScreen: React.FC<ChatScreenProps> = () => {
 
   // Handle settings button
   const handleSettings = useCallback(() => {
-    console.log('[ChatScreen] Settings button tapped!');
-    console.log('[ChatScreen] Navigation object:', navigation);
-    console.log('[ChatScreen] Attempting to navigate to Settings...');
-    navigation.navigate('Settings');
-    console.log('[ChatScreen] Navigate called');
-  }, [navigation]);
+    console.log('=================');
+    console.log('[ChatScreen] SETTINGS BUTTON TAPPED!!!');
+    console.log('[ChatScreen] manualNavigate type:', typeof manualNavigate);
+    console.log('[ChatScreen] manualNavigate function:', manualNavigate);
+    console.log('[ChatScreen] Calling manualNavigate("Settings")...');
+    console.log('=================');
+    try {
+      manualNavigate('Settings');
+      console.log('[ChatScreen] ✅ manualNavigate called successfully');
+    } catch (error) {
+      console.error('[ChatScreen] ❌ Error calling manualNavigate:', error);
+    }
+  }, [manualNavigate]);
 
   // Render message item
   const renderMessage = useCallback(
@@ -195,14 +210,19 @@ export const ChatScreen: React.FC<ChatScreenProps> = () => {
 
   return (
     <View style={styles.background}>
-      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-        {/* Header */}
-        <View testID="chat-header" style={styles.header}>
+      <SafeAreaView style={styles.container} edges={['left', 'right']}>
+        {/* Header - top edge removed from SafeAreaView to allow touches */}
+        <View testID="chat-header" style={[styles.header, {marginTop: 44}]}>
           <ConnectionStatus status={connectionStatus} />
           
           <TouchableOpacity
             testID="settings-button"
-            onPress={handleSettings}
+            onPress={() => {
+              console.log('[ChatScreen] TouchableOpacity onPress FIRED!');
+              handleSettings();
+            }}
+            onPressIn={() => console.log('[ChatScreen] TouchableOpacity onPressIn')}
+            onPressOut={() => console.log('[ChatScreen] TouchableOpacity onPressOut')}
             style={styles.settingsButton}
             accessible={true}
             accessibilityLabel="Settings"

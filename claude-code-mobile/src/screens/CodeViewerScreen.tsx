@@ -8,11 +8,17 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useHTTP } from '../contexts/HTTPContext';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants/theme';
-import type { CodeViewerScreenProps } from '../types/navigation';
+import { useAppStore } from '../store/useAppStore';
 
-export const CodeViewerScreen: React.FC<CodeViewerScreenProps> = ({ navigation, route }) => {
+interface ManualNavigationProps {
+  navigate: (screen: string) => void;
+}
+
+export const CodeViewerScreen: React.FC<ManualNavigationProps> = ({ navigate }) => {
   const { httpService } = useHTTP();
-  const { filePath, fileName } = route.params;
+  const currentFile = useAppStore((state) => state.currentFile);
+  const filePath = currentFile?.path || '';
+  const fileName = filePath.split('/').pop() || 'Unknown';
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -40,7 +46,7 @@ export const CodeViewerScreen: React.FC<CodeViewerScreenProps> = ({ navigation, 
     <View style={styles.background}>
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
         <View testID="codeviewer-header" style={styles.header}>
-          <TouchableOpacity testID="back-button" onPress={() => navigation.goBack()}>
+          <TouchableOpacity testID="back-button" onPress={() => navigate('FileBrowser')}>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={styles.title} numberOfLines={1}>{fileName}</Text>

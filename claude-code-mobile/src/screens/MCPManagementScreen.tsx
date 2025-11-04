@@ -20,9 +20,11 @@ interface MCPServer {
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/navigation';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'MCPManagement'>;
+interface ManualNavigationProps {
+  navigate: (screen: string) => void;
+}
 
-export const MCPManagementScreen: React.FC<Props> = ({ navigation }) => {
+export const MCPManagementScreen: React.FC<ManualNavigationProps> = ({ navigate }) => {
   const [servers, setServers] = useState<MCPServer[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -63,7 +65,7 @@ export const MCPManagementScreen: React.FC<Props> = ({ navigation }) => {
     <View style={styles.background}>
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={() => navigate('Chat')}>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={styles.title}>MCP Servers</Text>

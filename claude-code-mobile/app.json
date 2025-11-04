@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "claudecodemobile",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yourcompany.claudecodemobile"
@@ -33,9 +32,6 @@
         }
       ]
     ],
-    "experiments": {
-      "reactCompiler": true
-    },
     "extra": {
       "eas": {
         "projectId": "6d767b9c-ffac-4d5e-a12b-66da488313a6"

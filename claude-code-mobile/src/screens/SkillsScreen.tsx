@@ -17,9 +17,11 @@ interface Skill {
   size: number;
 }
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Skills'>;
+interface ManualNavigationProps {
+  navigate: (screen: string) => void;
+}
 
-export const SkillsScreen: React.FC<Props> = ({ navigation }) => {
+export const SkillsScreen: React.FC<ManualNavigationProps> = ({ navigate }) => {
   const [skills, setSkills] = useState<Skill[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -99,7 +101,7 @@ export const SkillsScreen: React.FC<Props> = ({ navigation }) => {
     <View style={styles.background}>
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={() => navigate('Chat')}>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Skills</Text>

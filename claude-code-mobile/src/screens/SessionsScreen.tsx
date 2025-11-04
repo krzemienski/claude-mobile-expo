@@ -13,7 +13,11 @@ import { Session } from '../types/models';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants/theme';
 import type { SessionsScreenProps } from '../types/navigation';
 
-export const SessionsScreen: React.FC<SessionsScreenProps> = ({ navigation }) => {
+interface ManualNavigationProps {
+  navigate: (screen: string) => void;
+}
+
+export const SessionsScreen: React.FC<ManualNavigationProps> = ({ navigate }) => {
   const { httpService } = useHTTP();
   const [isLoading, setIsLoading] = useState(false);
   
@@ -34,7 +38,7 @@ export const SessionsScreen: React.FC<SessionsScreenProps> = ({ navigation }) =>
       const response = await httpService.listSessions();
       // Map backend sessions to frontend Session type and update store
       const backendSessions = response.data || [];
-      const mappedSessions = backendSessions.map((s) => ({
+      const mappedSessions = backendSessions.map((s: any) => ({
         id: s.id,
         projectId: s.project_id,
         title: s.title || `Session ${s.id.substring(0, 8)}`,
@@ -66,7 +70,7 @@ export const SessionsScreen: React.FC<SessionsScreenProps> = ({ navigation }) =>
 
   const handleSelectSession = (session: Session) => {
     setCurrentSession(session);
-    navigation.navigate('Chat');
+    navigate('Chat');
   };
 
   const handleDeleteSession = async (sessionId: string) => {
@@ -109,7 +113,7 @@ export const SessionsScreen: React.FC<SessionsScreenProps> = ({ navigation }) =>
     <View style={styles.background}>
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
         <View testID="sessions-header" style={styles.header}>
-          <TouchableOpacity testID="back-button" onPress={() => navigation.goBack()}>
+          <TouchableOpacity testID="back-button" onPress={() => navigate('Chat')}>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Your Sessions</Text>
