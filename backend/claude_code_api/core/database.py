@@ -185,6 +185,44 @@ class DatabaseManager:
             return session_obj
     
     @staticmethod
+    async def list_sessions(
+        db: AsyncSession,
+        project_id: str = None,
+        page: int = 1,
+        per_page: int = 20
+    ) -> List[Session]:
+        """List sessions from database with optional project filter."""
+        from sqlalchemy import select
+
+        query = select(Session).order_by(Session.updated_at.desc())
+
+        if project_id:
+            query = query.where(Session.project_id == project_id)
+
+        # Apply pagination
+        offset = (page - 1) * per_page
+        query = query.offset(offset).limit(per_page)
+
+        result = await db.execute(query)
+        return result.scalars().all()
+
+    @staticmethod
+    async def count_sessions(
+        db: AsyncSession,
+        project_id: str = None
+    ) -> int:
+        """Count sessions in database with optional project filter."""
+        from sqlalchemy import select, func
+
+        query = select(func.count()).select_from(Session)
+
+        if project_id:
+            query = query.where(Session.project_id == project_id)
+
+        result = await db.execute(query)
+        return result.scalar()
+
+    @staticmethod
     async def add_message(message_data: dict) -> Message:
         """Add message to session."""
         async with AsyncSessionLocal() as session:

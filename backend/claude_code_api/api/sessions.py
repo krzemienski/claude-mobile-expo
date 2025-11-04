@@ -12,6 +12,9 @@ from claude_code_api.models.openai import (
     PaginationInfo
 )
 from claude_code_api.core.session_manager import SessionManager
+from claude_code_api.core.database import db_manager, get_db
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = structlog.get_logger()
 router = APIRouter()
@@ -22,47 +25,50 @@ async def list_sessions(
     page: int = 1,
     per_page: int = 20,
     project_id: str = None,
-    req: Request = None
+    db: AsyncSession = Depends(get_db)
 ) -> PaginatedResponse:
-    """List all sessions."""
-    
-    session_manager: SessionManager = req.app.state.session_manager
-    
-    # Get active sessions
-    active_sessions = []
-    for session_id, session_info in session_manager.active_sessions.items():
-        if project_id is None or session_info.project_id == project_id:
-            session_data = SessionInfo(
-                id=session_info.session_id,
-                project_id=session_info.project_id,
-                title=f"Session {session_info.session_id[:8]}",
-                model=session_info.model,
-                system_prompt=session_info.system_prompt,
-                created_at=session_info.created_at,
-                updated_at=session_info.updated_at,
-                is_active=session_info.is_active,
-                total_tokens=session_info.total_tokens,
-                total_cost=session_info.total_cost,
-                message_count=session_info.message_count
-            )
-            active_sessions.append(session_data)
-    
-    # Simple pagination
-    start_idx = (page - 1) * per_page
-    end_idx = start_idx + per_page
-    paginated_sessions = active_sessions[start_idx:end_idx]
-    
+    """List all sessions from database."""
+
+    # Query database directly (not in-memory sessions)
+    sessions_from_db = await db_manager.list_sessions(
+        db=db,
+        project_id=project_id,
+        page=page,
+        per_page=per_page
+    )
+
+    # Convert to SessionInfo format
+    session_list = []
+    for db_session in sessions_from_db:
+        session_data = SessionInfo(
+            id=db_session.id,
+            project_id=db_session.project_id,
+            title=db_session.title or f"Session {db_session.id[:8]}",
+            model=db_session.model,
+            system_prompt=db_session.system_prompt,
+            created_at=db_session.created_at,
+            updated_at=db_session.updated_at,
+            is_active=db_session.is_active,
+            total_tokens=db_session.total_tokens,
+            total_cost=db_session.total_cost,
+            message_count=db_session.message_count
+        )
+        session_list.append(session_data)
+
+    # Get total count for pagination
+    total_count = await db_manager.count_sessions(db=db, project_id=project_id)
+
     pagination = PaginationInfo(
         page=page,
         per_page=per_page,
-        total_items=len(active_sessions),
-        total_pages=(len(active_sessions) + per_page - 1) // per_page,
-        has_next=end_idx < len(active_sessions),
+        total_items=total_count,
+        total_pages=(total_count + per_page - 1) // per_page,
+        has_next=page * per_page < total_count,
         has_prev=page > 1
     )
-    
+
     return PaginatedResponse(
-        data=paginated_sessions,
+        data=session_list,
         pagination=pagination
     )
 
