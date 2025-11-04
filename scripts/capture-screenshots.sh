@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
-DEVICE="${1:-iPhone 14}"
+DEVICE="${1:-iPhone 17 Pro Max}"
 GATE="${2:-gate-4a}"
 OUTPUT_DIR="$PROJECT_ROOT/validation/${GATE}-screenshots"
 

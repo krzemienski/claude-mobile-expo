@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-DEVICE="${1:-iPhone 14}"
+DEVICE="${1:-iPhone 17 Pro Max}"
 
 echo "🚀 Starting Integration Environment"
 echo "===================================="
@@ -20,12 +20,12 @@ echo "✅ Backend PID: $BACKEND_PID"
 
 # Wait for backend ready
 echo "⏳ Waiting for backend..."
-timeout 15 bash -c 'until curl -sf http://localhost:3001/health > /dev/null; do sleep 1; done' || {
+timeout 15 bash -c 'until curl -sf http://localhost:8001/health > /dev/null; do sleep 1; done' || {
   echo "❌ Backend failed to start"
   cat ../logs/backend.log | tail -50
   exit 1
 }
-echo "✅ Backend ready: http://localhost:3001"
+echo "✅ Backend ready: http://localhost:8001"
 
 # 2. Start Metro
 echo ""
@@ -40,7 +40,7 @@ echo "⚙️  [3/3] Building and launching iOS app..."
 echo ""
 echo "✅ Integration Environment Ready!"
 echo "================================="
-echo "🖥️  Backend: http://localhost:3001 (PID: $BACKEND_PID)"
+echo "🖥️  Backend: http://localhost:8001 (PID: $BACKEND_PID)"
 echo "📦 Metro: http://localhost:8081 (expo-mcp enabled)"
 echo "📱 iOS: $DEVICE simulator"
 echo ""

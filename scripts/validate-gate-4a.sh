@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-DEVICE="${1:-iPhone 14}"
+DEVICE="${1:-iPhone 17 Pro Max}"
 
 echo "🧪 VALIDATION GATE 4A: Frontend Visual Testing"
 echo "==============================================="

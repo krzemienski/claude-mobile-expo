@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-MOBILE_DIR="$PROJECT_ROOT/claude-code-mobile"
+MOBILE_DIR="$PROJECT_ROOT/claude-code-mobile-v3"
 LOGS_DIR="$PROJECT_ROOT/logs"
 
 echo "🚀 Starting Metro bundler..."
@@ -28,7 +28,7 @@ mkdir -p "$LOGS_DIR"
 
 # Start Metro with expo-mcp support
 cd "$MOBILE_DIR"
-EXPO_UNSTABLE_MCP_SERVER=1 npm start > "$LOGS_DIR/metro.log" 2>&1 &
+EXPO_UNSTABLE_MCP_SERVER=1 npx expo start > "$LOGS_DIR/metro.log" 2>&1 &
 METRO_PID=$!
 echo $METRO_PID > "$LOGS_DIR/metro.pid"
 

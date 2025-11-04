@@ -3,10 +3,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-MOBILE_DIR="$PROJECT_ROOT/claude-code-mobile"
+MOBILE_DIR="$PROJECT_ROOT/claude-code-mobile-v3"
 LOGS_DIR="$PROJECT_ROOT/logs"
 
-DEVICE="${1:-iPhone 14}"
+DEVICE="${1:-iPhone 17 Pro Max}"
 CLEAN_BUILD="${2:-}"
 
 echo "📱 Building iOS app for: $DEVICE"
